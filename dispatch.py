@@ -1,6 +1,7 @@
 from stn import STN, loadSTNfromJSONfile
 from util import STNtoDCSTN, PriorityQueue
 from dc_stn import DC_STN
+from relax import relaxSearch
 import empirical
 import random
 import json
@@ -38,9 +39,9 @@ def simulate_and_save(file_names: list, size: int, out_name: str):
 ##
 # \fn simulate_file(file_name, size)
 # \brief Record dispatch result for single file
-def simulate_file(file_name, size, verbose=False, gauss=False) -> float:
+def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) -> float:
     network = loadSTNfromJSONfile(file_name)
-    result = simulation(network, size, verbose, gauss=False)
+    result = simulation(network, size, verbose, gauss, relaxed)
     if verbose:
         print(f"{file_name} worked {100*result}% of the time.")
     return result
@@ -48,14 +49,19 @@ def simulate_file(file_name, size, verbose=False, gauss=False) -> float:
 
 ##
 # \fn simulation(network, size)
-def simulation(network: STN, size: int, verbose=False, gauss=False) -> float:
+def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False) -> float:
     # Collect useful data from the original network
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
     uncontrollables = set(contingents.values())
 
+    if relaxed:
+        dispatching_network, count, cycles, weights = relaxSearch(network.copy())
+    else:
+        dispatching_network = network
+
     total_victories = 0
-    dc_network = STNtoDCSTN(network)
+    dc_network = STNtoDCSTN(dispatching_network)
     dc_network.addVertex(ZERO_ID)
 
     controllability = dc_network.is_DC()
@@ -79,7 +85,7 @@ def simulation(network: STN, size: int, verbose=False, gauss=False) -> float:
     for j in range(size):
         realization = generate_realization(network, gauss)
         copy = dc_network.copy()
-        result = dispatch(network, copy, realization, contingents,
+        result = dispatch(dispatching_network, copy, realization, contingents,
                           uncontrollables, verbose)
         if verbose:
             print("Completed a simulation.")
