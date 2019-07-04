@@ -212,6 +212,8 @@ def optimalRelax(bounds, weight):
 def relaxTotalLength(bounds, weight):
     return null
 
+
+
 ##
 # \fn relaxSearch(STN)
 # \brief run relaxation algorithm on an STNU so that it becomes dynamically
@@ -252,3 +254,38 @@ def relaxSearch(STN):
             STN.copy(), report=False)
 
     return STN, count, cycles, weights
+
+
+
+def relaxNextContingent(network: STN, contingent_edge: Edge):
+    result, conflicts, bounds, weight = DC_Checker(network.copy(), report=False)
+
+    count = 0
+    cycles = []
+    weights = []
+    while not result:
+        edges = [x[0] for x in list(bounds['contingent'].values())]
+        cycles.append(edges)
+        weights.append(weight)
+
+        edge_upper = - network.contingentEdges[contingent_edge.j, contingent_edge.i]
+        edge_lower = network.contingentEdges[contingent_edge.i, contingent_edge.j]
+
+        for (i, j) in list(network.contingentEdges.keys()):
+            if j not in list(epsilons.keys()):
+                continue
+
+            edge = network.contingentEdges[(i, j)]
+            if bounds['contingent'][(i, j)][1] == 'UPPER':
+                network.modifyEdge(i, j, edge.Cij - epsilons[j])
+            else:
+                STN.modifyEdge(j, i, edge.Cji - epsilons[j])
+
+        count += 1
+        result, conflicts, bounds, weight = DC_Checker(
+            network.copy(), report=False)
+
+    return network, count, cycles, weights
+
+
+
