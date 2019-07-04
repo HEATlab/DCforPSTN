@@ -122,7 +122,7 @@ def resolveNovel(e, novel, preds):
 # @return A dictionary containing information about the original constraints
 #         in the original STNU that we can relax and whether LOWER or UPPER
 #         bound can be relaxed
-def getFinalResult(conflicts, STN, D, C, report=True):
+def getFinalResult(conflicts, STN, D, C, report=False):
     ## Initialize the result dictionary
     result = {}
     result['requirement'] = {}
@@ -259,7 +259,7 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
 # @return Return True if the input STNU is dynamically controllable. Otherwise,
 #         return False, conflicts (in labeled graph), conflicts in original STNU,
 #         and weights of the negative cycle (conflict).
-def DC_Checker(STN, report=True):
+def DC_Checker(STN, report=False):
     G, C, D = normal(STN.copy())
     negNodes = G.getNegNodes()
     novel = []
