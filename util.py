@@ -93,7 +93,7 @@ def normal(STN):
             new.addEdge(e.i, e.j, e.Cij)
             new.addEdge(e.j, e.i, e.Cji)
         else:
-            print(e)
+            # print(e)
             contingents[(e.i,e.j)] = e
             contingents[(e.j,e.i)] = e
             if e.Cji != 0:
