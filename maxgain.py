@@ -38,8 +38,13 @@ def maxgain(inputstn,
     # list of untightened edges
     tedges = stncopy.contingentEdges
     result = None
+
+    rounds = 0
+
     while len(tedges) > 0:
         workingAlpha = []
+        rounds += 1
+
         while upper - lower > 1:
             alpha = alphas[(upper + lower) // 2]
 
@@ -60,6 +65,8 @@ def maxgain(inputstn,
                 result = (alpha, stncopy)
             else:
                 lower = (upper + lower) // 2
+            print("lower", lower/1000)
+            print(rounds, "12-20", stncopy.getEdge(12,20))
             # finished our search, load the smallest alpha decoupling
             if upper - lower <= 1:
                 if result is not None:
@@ -150,8 +157,9 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=F
 
 
 if __name__ == "__main__":
-    directory = "dataset/uncontrollable"
-    data_list = glob.glob(os.path.join(directory, '*.json'))
+    # directory = "dataset/uncontrollable"
+    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    data_list = ["dataset/uncontrollable7.json"]
     comparison = []
     for data in data_list:
         print(data)
