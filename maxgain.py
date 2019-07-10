@@ -34,7 +34,6 @@ def maxgain(inputstn,
 
     result = None
 
-    # First run binary search on alpha
     # list of untightened edges
     tedges = stncopy.contingentEdges
     result = None
@@ -42,7 +41,6 @@ def maxgain(inputstn,
     rounds = 0
 
     while len(tedges) > 0:
-        workingAlpha = []
         rounds += 1
 
         while upper - lower > 1:
@@ -61,19 +59,18 @@ def maxgain(inputstn,
                 result = (alpha, stncopy)
             else:
                 lower = (upper + lower) // 2
-            print("lower", lower/1000, "upper", upper/1000)
-            # print(rounds, "12-20", stncopy.getEdge(12,20))
+            if debug:
+                print("lower", lower/1000, "upper", upper/1000)
             # finished our search, load the smallest alpha decoupling
 
             if upper - lower <= 1:
                 if result is not None:
-                    print(lower/1000, result[0], upper/1000, rounds, "shazam")
+                    if debug:
+                        print('finished binary search, with lower', lower/1000, 'alpha', result[0], 'upper', upper/1000, 'rounds', rounds)
                     stncopy = alphaUpdate(stncopy, tedges, result[0])
                     loweststn = alphaUpdate(stncopy, tedges, result[0]-.001)
                     dc, conflicts, bounds, weight = DC_Checker(loweststn)
                     if dc:
-                        if debug:
-                            print('The system is dynamically controllable')
                         return loweststn
                     else:
                         # find the tightest contingent edges
@@ -160,16 +157,28 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=F
 if __name__ == "__main__":
     directory = "dataset/uncontrollable"
     data_list = glob.glob(os.path.join(directory, '*.json'))
-    # data_list = ["dataset/uncontrollable7.json"]
     comparison = []
     for data in data_list:
         print(data)
         stn = loadSTNfromJSONfile(data)
-        newstn = maxgain(stn, debug = False)
-        result = simulate_maxgain(stn, newstn, size = 10)
-        oldresult = simulation(stn,10)
-        print(result, oldresult)
+        newstn = maxgain(stn, debug = True)
+        result = simulate_maxgain(stn, newstn, size = 50)
+        oldresult = simulation(stn,50)
         comparison += [(result, oldresult)]
+    sumNew = 0
+    sumOld = 0
+    improvementCount = 0
+    equalCount = 0
+    for i in range(len(comparison)):
+        sumNew += comparison[i][0]
+        sumOld += comparison[i][1]
+        if comparison[i][0] > comparison[i][1]:
+            improvementCount += 1
+        elif comparison[i][0] == comparison[i][1]:
+            equalCount += 1
+    print(sumNew, sumOld, improvementCount, equalCount, len(comparison))
+    print(comparison)
+
     
 
 
