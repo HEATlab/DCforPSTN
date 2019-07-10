@@ -54,23 +54,22 @@ def maxgain(inputstn,
             
             if alpha == .999:
                 return stncopy
-            #
-            # 
-            # bounds is a dictionary of contigent edges you can change
-            # contigent
-            #weight sum of the cycle 
+
             dc, conflicts, bounds, weight = DC_Checker(stncopy)
             if dc:
                 upper = (upper + lower) // 2
                 result = (alpha, stncopy)
             else:
                 lower = (upper + lower) // 2
-            print("lower", lower/1000)
-            print(rounds, "12-20", stncopy.getEdge(12,20))
+            print("lower", lower/1000, "upper", upper/1000)
+            # print(rounds, "12-20", stncopy.getEdge(12,20))
             # finished our search, load the smallest alpha decoupling
+
             if upper - lower <= 1:
                 if result is not None:
-                    loweststn = alphaUpdate(stncopy, tedges, lower/1000)
+                    print(lower/1000, result[0], upper/1000, rounds, "shazam")
+                    stncopy = alphaUpdate(stncopy, tedges, result[0])
+                    loweststn = alphaUpdate(stncopy, tedges, result[0]-.001)
                     dc, conflicts, bounds, weight = DC_Checker(loweststn)
                     if dc:
                         if debug:
@@ -79,6 +78,7 @@ def maxgain(inputstn,
                     else:
                         # find the tightest contingent edges
                         tightest = bounds['contingent']
+                        print(list(tightest.items()), rounds)
                         for i,j in list(tightest.keys()):
                             edge, bound = tightest[i,j]
                             tedges.pop((edge.i, edge.j))
@@ -87,6 +87,7 @@ def maxgain(inputstn,
                         print('could not produce dynamically controllable STNU.')
                     return None
         lower = ceil(lb * 1000) - 1
+        upper = result[0]*1000
     return stncopy
 
 def alphaUpdate(inputstn, tedges, alpha):
@@ -157,9 +158,9 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=F
 
 
 if __name__ == "__main__":
-    # directory = "dataset/uncontrollable"
-    # data_list = glob.glob(os.path.join(directory, '*.json'))
-    data_list = ["dataset/uncontrollable7.json"]
+    directory = "dataset/uncontrollable"
+    data_list = glob.glob(os.path.join(directory, '*.json'))
+    # data_list = ["dataset/uncontrollable7.json"]
     comparison = []
     for data in data_list:
         print(data)
