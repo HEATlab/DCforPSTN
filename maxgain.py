@@ -11,13 +11,6 @@ from math import floor, ceil
 from dispatch import *
 
 
-# def sample_maxgain(, size):
-#     for i in range(size)
-
-
-
-
-
 def maxgain(inputstn,
          debug=False,
          returnAlpha=True,
@@ -94,19 +87,29 @@ def alphaUpdate(inputstn, tedges, alpha):
         return stncopy
     else:
         for (i, j), edge in list(tedges.items()):
-            # if edge.distribution() == "gaussian":
-            #     p_ij = invcdf_norm(1.0 - alpha * 0.5, edge.mu, edge.sigma)
-            #     p_ji = -invcdf_norm(alpha * 0.5, edge.mu, edge.sigma)
+            if edge.type == "stcu":
+                p_ij = invcdf_uniform(1.0 - alpha * 0.5, -edge.Cji, edge.Cij)
+                p_ji = -invcdf_uniform(alpha * 0.5, -edge.Cji, edge.Cij)
+                stncopy.modifyEdge(i, j, p_ij)
+                stncopy.modifyEdge(j, i, p_ji)
+            else:
+                assert edge.dtype != None
+                dist = edge.distribution
 
-            # elif edge.distribution() == "uniform" or None:
-            #     p_ij = invcdf_uniform(1.0 - alpha * 0.5, edge.dist_lb,
-            #                         edge.dist_ub)
-            #     p_ji = -invcdf_uniform(alpha * 0.5, edge.dist_lb, edge.dist_ub)
-            p_ij = invcdf_uniform(1.0 - alpha * 0.5, -edge.Cji, edge.Cij)
+                if edge.dtype() == "gaussian":
+                    p_ij = invcdf_norm(1.0 - alpha * 0.5, edge.mu, edge.sigma)
+                    p_ji = -invcdf_norm(alpha * 0.5, edge.mu, edge.sigma)
+                    limit_ij = invcdf_norm(0.997, edge.mu, edge.sigma)
+                    limit_ji = -invcdf_norm(0.003, edge.mu, edge.sigma)
+                    stncopy.modifyEdge(i, j, p_ij)
+                    stncopy.modifyEdge(j, i, p_ji)
 
-            p_ji = -invcdf_uniform(alpha * 0.5, -edge.Cji, edge.Cij)
-            stncopy.modifyEdge(i, j, p_ij)
-            stncopy.modifyEdge(j, i, p_ji)
+                elif edge.dtype() == "uniform":
+                    p_ij = invcdf_uniform(1.0 - alpha * 0.5, -edge.Cji, edge.Cij)
+                    p_ji = -invcdf_uniform(alpha * 0.5, -edge.Cji, edge.Cij)
+                    stncopy.modifyEdge(i, j, p_ij)
+                    stncopy.modifyEdge(j, i, p_ji)
+
         return stncopy
 
 def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=False):
@@ -155,30 +158,33 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=F
 
 
 if __name__ == "__main__":
-    directory = "dataset/uncontrollable"
-    data_list = glob.glob(os.path.join(directory, '*.json'))
-    comparison = []
-    for data in data_list:
-        print(data)
-        stn = loadSTNfromJSONfile(data)
-        newstn = maxgain(stn, debug = True)
-        result = simulate_maxgain(stn, newstn, size = 50)
-        oldresult = simulation(stn,50)
-        comparison += [(result, oldresult)]
-    sumNew = 0
-    sumOld = 0
-    improvementCount = 0
-    equalCount = 0
-    for i in range(len(comparison)):
-        sumNew += comparison[i][0]
-        sumOld += comparison[i][1]
-        if comparison[i][0] > comparison[i][1]:
-            improvementCount += 1
-        elif comparison[i][0] == comparison[i][1]:
-            equalCount += 1
-    print(sumNew, sumOld, improvementCount, equalCount, len(comparison))
-    print(comparison)
-
+    # directory = "dataset/uncontrollable"
+    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    # comparison = []
+    # for data in data_list:
+    #     print(data)
+    #     stn = loadSTNfromJSONfile(data)
+    #     newstn = maxgain(stn, debug = True)
+    #     result = simulate_maxgain(stn, newstn, size = 500)
+    #     oldresult = simulation(stn,500)
+    #     comparison += [(result, oldresult)]
+    # sumNew = 0
+    # sumOld = 0
+    # improvementCount = 0
+    # equalCount = 0
+    # for i in range(len(comparison)):
+    #     sumNew += comparison[i][0]
+    #     sumOld += comparison[i][1]
+    #     if comparison[i][0] > comparison[i][1]:
+    #         improvementCount += 1
+    #     elif comparison[i][0] == comparison[i][1]:
+    #         equalCount += 1
+    # print(sumNew, sumOld, improvementCount, equalCount, len(comparison))
+    # print(comparison)
+    stn = loadSTNfromJSONfile('dataset/dreamdata/original_6.json')
+    newstn = maxgain(stn, debug = True)
+    result = simulate_maxgain(stn, newstn, size = 500)
+    print(result)
     
 
 
