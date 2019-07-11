@@ -257,35 +257,40 @@ def relaxSearch(STN):
 
 
 
-def relaxNextContingent(network: STN, contingent_edge: Edge):
-    result, conflicts, bounds, weight = DC_Checker(network.copy(), report=False)
+def relaxNextExecutable(network: STN, center_network: STN, up_node, down_node):
+    result, conflicts, bounds, weight, edges = DC_Checker_CT_version(center_network.copy(), report=False)
 
-    count = 0
-    cycles = []
-    weights = []
-    while not result:
-        edges = [x[0] for x in list(bounds['contingent'].values())]
-        cycles.append(edges)
-        weights.append(weight)
+    changeable_edge = network.requirementEdges[(down_node, up_node)]
+    edge_upper = changeable_edge.Cij
+    edge_lower = - changeable_edge.Cji
 
-        edge_upper = - network.contingentEdges[contingent_edge.j, contingent_edge.i]
-        edge_lower = network.contingentEdges[contingent_edge.i, contingent_edge.j]
+    edge_est = (edge_lower + edge_upper)/2
 
-        for (i, j) in list(network.contingentEdges.keys()):
-            if j not in list(epsilons.keys()):
-                continue
+    cw = False
+    for dc_edge in edges:
+        if dc_edge.i == down_node and dc_edge.j == up_node:
+            cw = True
 
-            edge = network.contingentEdges[(i, j)]
-            if bounds['contingent'][(i, j)][1] == 'UPPER':
-                network.modifyEdge(i, j, edge.Cij - epsilons[j])
+    # if conflict includes the edge we can change
+    if bounds['requirement'][(down_node, up_node)] != None:
+        # if adjustment won't throw us below bounds
+        if cw:
+            weight = -weight
+        if edge_est + weight >= edge_lower:
+            # if adjustment won't throw us above bounds
+            if edge_est + weight <= edge_upper:
+                # adjust edge to correct for conflict weight     
+                edge_est += weight
+            # otherwise, adjust as much as we can
             else:
-                STN.modifyEdge(j, i, edge.Cji - epsilons[j])
+                edge_est = edge_upper
+        else:
+            edge_est = edge_lower
 
-        count += 1
-        result, conflicts, bounds, weight = DC_Checker(
-            network.copy(), report=False)
-
-    return network, count, cycles, weights
+    # print("--------")
+    # print("weight of conflict is", weight)
+    # print("requirement edge from ", down_node, " to ", up_node, " should be set to ", edge_est)
+    return edge_est
 
 
 
