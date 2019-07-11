@@ -6,6 +6,7 @@ from dispatch import *
 from probability import *
 import matplotlib.pyplot as plt
 from scipy.stats import norm
+import csv
 import numpy as np
 import glob
 import json
@@ -23,13 +24,13 @@ import math
 # -------------------------------------------------------------------------
 
 
-def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):
+def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed, ct):
     data_list = glob.glob(os.path.join(data_path, '*.json'))
 
     result = {}
 
     for data in data_list:
-        dispatch = simulate_file(data, sim_num, False, gauss, relaxed)
+        dispatch = simulate_file(data, sim_num, False, gauss, relaxed, ct)
         ddc = prob_of_DC_file(data, gauss)
 
         path, name = os.path.split(data)
@@ -38,8 +39,12 @@ def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):
     #return result
 
     # Save the results
-    with open(out_name, 'w') as f:
-        json.dump(result, f)
+    # with open(out_name, 'w') as f:
+    #     json.dump(result, f)
+    with open(out_name, 'w') as csv_file:
+        writer = csv.writer(csv_file)
+        for key, value in result.items():
+            writer.writerow([key, value[0], value[1]])
 
 
 
