@@ -16,7 +16,7 @@ from stn import STN
 # @param using_PSTN     Flag indicating whether the input STN is a PSTN
 #
 # @return Returns a STN object loaded from the json object
-def loadSTNfromJSONfile(filepath, using_PSTN=False):
+def loadSTNfromJSONfile(filepath, using_PSTN=True):
     with open(filepath, 'r') as f:
         stn = loadSTNfromJSON(f.read(), using_PSTN=using_PSTN)
     return stn
@@ -31,7 +31,7 @@ def loadSTNfromJSONfile(filepath, using_PSTN=False):
 # @param using_PSTN     Flag indicating whether the input STN is a PSTN
 #
 # @return Returns a STN object loaded from the json string
-def loadSTNfromJSON(json_str, using_PSTN=False):
+def loadSTNfromJSON(json_str, using_PSTN=True):
     jsonSTN = json.loads(json_str)
     return loadSTNfromJSONobj(jsonSTN, using_PSTN=using_PSTN)
 
@@ -45,7 +45,7 @@ def loadSTNfromJSON(json_str, using_PSTN=False):
 # @param using_PSTN     Flag indicating whether the input STN is a PSTN
 #
 # @return Returns a STN object loaded from the json object
-def loadSTNfromJSONobj(jsonSTN, using_PSTN=False):
+def loadSTNfromJSONobj(jsonSTN, using_PSTN=True):
     stn = STN()
 
     # Add the root vertex and put it in the T_x set
@@ -60,10 +60,13 @@ def loadSTNfromJSONobj(jsonSTN, using_PSTN=False):
         if using_PSTN and 'distribution' in e:
             stn.addEdge(e['first_node'], e['second_node'],
                         float(e['min_duration']), float(e['max_duration']),
-                        e['type'], e['distribution']['name'])
-        else:
+                        e['distribution']['type'], e['distribution']['name'])
+        elif 'type' in e:
             stn.addEdge(e['first_node'], e['second_node'],
                         float(e['min_duration']), float(e['max_duration']),
                         e['type'])
+        else:
+            stn.addEdge(e['first_node'], e['second_node'],
+                        float(e['min_duration']), float(e['max_duration']))
 
     return stn
