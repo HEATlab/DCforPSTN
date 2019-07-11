@@ -1,10 +1,11 @@
 from stn import STN, loadSTNfromJSONfile
 from util import STNtoDCSTN, PriorityQueue
 from dc_stn import DC_STN
-from relax import relaxSearch
+from relax import relaxSearch, relaxNextExecutable
 import empirical
 import random
 import json
+import collections as ct
 
 # For faster checking in safely_scheduled
 import simulation as sim
@@ -39,9 +40,9 @@ def simulate_and_save(file_names: list, size: int, out_name: str):
 ##
 # \fn simulate_file(file_name, size)
 # \brief Record dispatch result for single file
-def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) -> float:
+def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, ct=False) -> float:
     network = loadSTNfromJSONfile(file_name)
-    result = simulation(network, size, verbose, gauss, relaxed)
+    result = simulation(network, size, verbose, gauss, relaxed, ct)
     if verbose:
         print(f"{file_name} worked {100*result}% of the time.")
     return result
@@ -49,7 +50,7 @@ def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) ->
 
 ##
 # \fn simulation(network, size)
-def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False) -> float:
+def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False, ct=False) -> float:
     # Collect useful data from the original network
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
@@ -85,7 +86,11 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     for j in range(size):
         realization = generate_realization(network, gauss)
         copy = dc_network.copy()
-        result = dispatch(dispatching_network, copy, realization, contingents,
+        if ct:
+            result = dispatchCenterTargeting(dispatching_network, copy, realization, contingents,
+                          uncontrollables, verbose)
+        else:
+            result = dispatch(dispatching_network, copy, realization, contingents,
                           uncontrollables, verbose)
         if verbose:
             print("Completed a simulation.")
@@ -168,6 +173,8 @@ def dispatch(network: STN,
                     min_time = lower_bound
                     current_event = event
 
+        print("current event is", current_event)
+
         is_uncontrollable = current_event in uncontrollable_events
 
         if verbose:
@@ -192,7 +199,7 @@ def dispatch(network: STN,
         # If the executed event was a contingent source
         if current_event in contingent_map:
             uncontrollable = contingent_map[current_event]
-            delay = realization[uncontrollable]
+            delay = realization[uncontrollable][0]
             set_time = current_time + delay
             enabled.add(uncontrollable)
             time_windows[uncontrollable] = [set_time, set_time]
@@ -209,6 +216,7 @@ def dispatch(network: STN,
         not_executed.remove(current_event)
         enabled.remove(current_event)
         executed.add(current_event)
+        print("not executed are", not_executed)
 
         # Propagate the constraints
         for nodes, edge in dc_network.normal_edges.items():
@@ -281,7 +289,109 @@ def generate_realization(network: STN, gauss=False) -> dict:
         if gauss:
             mu = (edge.Cji + edge.Cij)/2 
             sd = (edge.Cij - edge.Cji)/4
-            realization[nodes[1]] = random.normalvariate(mu, sd)
+            realization[nodes[1]] = (random.normalvariate(mu, sd), nodes[0])
         else:
-            realization[nodes[1]] = random.uniform(-edge.Cji, edge.Cij)
+            realization[nodes[1]] = (random.uniform(-edge.Cji, edge.Cij), nodes[0])
     return realization
+
+
+def makeExpectedSTN(network: STN):
+    centerSTN = network.copy()
+    for edge in centerSTN.edges:
+        newVal = (network.getEdgeWeight(edge[0], edge[1]) - network.getEdgeWeight(edge[1], edge[0]))/2
+        centerSTN.modifyEdge(edge[0], edge[1], newVal)
+        centerSTN.modifyEdge(edge[1], edge[0], - newVal)
+    return centerSTN
+        
+
+def dispatchCenterTargeting(network: STN,
+             dc_network: DC_STN,
+             realization: dict,
+             contingent_map: dict,
+             uncontrollable_events,
+             verbose=False) -> bool:
+
+    # Dispatch the modified network and assume we have a zero reference point
+    enabled = {0}
+    not_executed = set(network.verts.keys())
+    executed = set()
+    current_time = 0.0
+
+    schedule = {}
+
+    time_windows = {event: [0, float('inf')] for event in not_executed}
+    current_event = None
+
+    centerSTN = makeExpectedSTN(network)
+
+    #pre-processing step
+    vertex_edge_map = ct.defaultdict(list)
+    for (vert_1, vert_2) in network.edges.keys():
+        vertex_edge_map[vert_2].append(network.edges[(vert_1,vert_2)])
+        vertex_edge_map[vert_1].append(network.edges[(vert_1,vert_2)])
+
+    while len(not_executed) > 0:
+        # Find next event to execute
+        min_time = float('inf')
+
+        # add newly enabled events to enabled
+        for event in not_executed:
+            ready = True
+            if event in enabled:
+                continue
+            #check if enabled
+            for edge in vertex_edge_map[event]:
+                if edge.i == event and edge.Cij <= 0:
+                    if edge.j not in executed:
+                        ready = False
+                        break
+                elif edge.j == event and edge.Cji <= 0:
+                    if edge.i not in executed:
+                        ready = False
+                        break
+            if ready:
+                enabled.add(event) 
+        # choose event to execute
+        for ready_event in enabled:
+            lower_bound = time_windows[ready_event][0]
+            if lower_bound < min_time:
+                min_time = lower_bound
+                current_event = ready_event
+            
+        # schedule the current event
+        is_uncontrollable = current_event in uncontrollable_events
+
+        prev_event = None
+        if is_uncontrollable:
+            delay = realization[current_event][0]
+            prev_event = realization[current_event][1]
+            current_time = current_time + delay
+        else:
+            try:
+                range_freedom = float('inf')
+                for edge in vertex_edge_map[current_event]:
+                    if edge.Cij - edge.Cji < range_freedom:
+                        if edge.i == current_event and edge.Cij <= 0:
+                            prev_event = edge.j
+                            range_freedom = edge.Cij - edge.Cji
+                        elif edge.j == current_event and edge.Cji <= 0:
+                            prev_event = edge.i
+                            range_freedom = edge.Cij - edge.Cji
+                delay = relaxNextExecutable(network, centerSTN, current_event, prev_event)
+                current_time = schedule[prev_event] + delay
+            except KeyError:
+                delay = 0
+
+        schedule[current_event] = current_time
+
+        # update the centered STN
+        centerSTN.modifyEdge(prev_event,current_event, delay)
+        centerSTN.modifyEdge(current_event, prev_event, -delay)
+
+
+        not_executed.remove(current_event)
+        enabled.remove(current_event)
+        executed.add(current_event)
+
+    good = empirical.scheduleIsValid(network, schedule)
+    return good
