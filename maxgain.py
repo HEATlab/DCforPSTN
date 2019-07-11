@@ -68,7 +68,8 @@ def maxgain(inputstn,
                     else:
                         # find the tightest contingent edges
                         tightest = bounds['contingent']
-                        print(list(tightest.items()), rounds)
+                        if debug:
+                            print(list(tightest.items()), rounds)
                         for i,j in list(tightest.keys()):
                             edge, bound = tightest[i,j]
                             tedges.pop((edge.i, edge.j))
@@ -94,7 +95,6 @@ def alphaUpdate(inputstn, tedges, alpha):
                 stncopy.modifyEdge(j, i, p_ji)
             else:
                 assert edge.dtype != None
-                dist = edge.distribution
 
                 if edge.dtype() == "gaussian":
                     p_ij = invcdf_norm(1.0 - alpha * 0.5, edge.mu, edge.sigma)
@@ -105,14 +105,14 @@ def alphaUpdate(inputstn, tedges, alpha):
                     stncopy.modifyEdge(j, i, p_ji)
 
                 elif edge.dtype() == "uniform":
-                    p_ij = invcdf_uniform(1.0 - alpha * 0.5, -edge.Cji, edge.Cij)
-                    p_ji = -invcdf_uniform(alpha * 0.5, -edge.Cji, edge.Cij)
+                    p_ij = invcdf_uniform(1.0 - alpha * 0.5, -edge.dist_lb, edge.dist_ub)
+                    p_ji = -invcdf_uniform(alpha * 0.5, -edge.dist_lb, edge.dist_ub)
                     stncopy.modifyEdge(i, j, p_ij)
                     stncopy.modifyEdge(j, i, p_ji)
 
         return stncopy
 
-def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=False):
+def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=True):
     # Collect useful data from the original network
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     # data_list = glob.glob(os.path.join(directory, '*.json'))
     # comparison = []
     # for data in data_list:
-    #     print(data)
+    #     print("loading",data)
     #     stn = loadSTNfromJSONfile(data)
     #     newstn = maxgain(stn, debug = True)
     #     result = simulate_maxgain(stn, newstn, size = 500)
@@ -181,12 +181,29 @@ if __name__ == "__main__":
     #         equalCount += 1
     # print(sumNew, sumOld, improvementCount, equalCount, len(comparison))
     # print(comparison)
-    stn = loadSTNfromJSONfile('dataset/dreamdata/original_6.json')
-    newstn = maxgain(stn, debug = True)
-    result = simulate_maxgain(stn, newstn, size = 500)
-    print(result)
+    directory = 'dataset/dreamdata/'
+    folders = os.listdir(directory)
+    data_list = []
+    for folder in folders:
+        data = glob.glob(os.path.join(directory, folder, '*.json'))
+        data_list += data
+    comparison = []
+    improvement = 0
+    tied = 0
+    total = len(data_list)
+
+    for data in data_list:
+        print("simulating", data)
+        stn = loadSTNfromJSONfile(data, using_PSTN=True)
+        newstn = maxgain(stn, debug = False)
+        result = simulate_maxgain(stn, newstn, size = 50)
+        oldresult = simulation(stn,50)
+        comparison += [(result, oldresult)]
+        if result > oldresult:
+            improvement += 1
+        elif result == oldresult:
+            tied += 1
+    print(improvement, tied, comparison)
     
-
-
 
 

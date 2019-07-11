@@ -143,14 +143,13 @@ class Edge(object):
         name_split = self.distribution.split("_")
         if len(name_split) != 3 or name_split[0] != "U":
             raise ValueError("No upper bound for non-uniform dist")
-        return float(name_split[2]) *1000
-
+        return float(name_split[2]) 
     @property
     def dist_lb(self):
         name_split = self.distribution.split("_")
         if len(name_split) != 3 or name_split[0] != "U":
             raise ValueError("No lower bound for non-uniform dist")
-        return float(name_split[1])*1000
+        return float(name_split[1]) 
 
     def cap(self):
         """Caps this edge's Cij and Cji properties to a "max" floating point

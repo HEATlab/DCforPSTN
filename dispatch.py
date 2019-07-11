@@ -269,13 +269,20 @@ def dispatch(network: STN,
 ##
 # \fn generate_realization(network)
 # \brief Uniformly at random pick values for contingent edges in STNU
-def generate_realization(network: STN, gauss=False) -> dict:
+def generate_realization(network: STN, gauss = True) -> dict:
     realization = {}
     for nodes, edge in network.contingentEdges.items():
-        if gauss:
-            mu = (edge.Cji + edge.Cij)/2 
-            sd = (edge.Cij - edge.Cji)/4
-            realization[nodes[1]] = random.normalvariate(mu, sd)
-        else:
-            realization[nodes[1]] = random.uniform(-edge.Cji, edge.Cij)
+        # if edge.dtype != 
+        #     realization[nodes[1]] = random.normalvariate(mu, sd)
+        # else:
+        #     realization[nodes[1]] = random.uniform(-edge.Cji, edge.Cij)
+        # if edge.type == "stcu":
+        #     realization[node[1]] = random.uniform(-edge.Cji, edge.Cij)
+        # else:
+        assert edge.dtype != None
+
+        if edge.dtype() == "gaussian":
+            realization[nodes[1]] = random.normalvariate(edge.mu, edge.sigma)
+        elif edge.dtype() == "uniform":
+            realization[nodes[1]] = random.uniform(edge.dist_lb, edge.dist_ub)
     return realization

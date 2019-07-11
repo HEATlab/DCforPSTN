@@ -62,9 +62,15 @@ def loadSTNfromJSONobj(jsonSTN, using_PSTN=True):
                         float(e['min_duration']), float(e['max_duration']),
                         e['distribution']['type'], e['distribution']['name'])
         elif 'type' in e:
-            stn.addEdge(e['first_node'], e['second_node'],
-                        float(e['min_duration']), float(e['max_duration']),
-                        e['type'])
+            if e['type'] == 'stcu':
+                dist = "U_"+str(e['min_duration']) + "_" + str(e['max_duration'])
+                stn.addEdge(e['first_node'], e['second_node'],
+                    float(e['min_duration']), float(e['max_duration']),
+                    e['type'], dist)
+            else:
+                stn.addEdge(e['first_node'], e['second_node'],
+                            float(e['min_duration']), float(e['max_duration']),
+                            e['type'])
         else:
             stn.addEdge(e['first_node'], e['second_node'],
                         float(e['min_duration']), float(e['max_duration']))
