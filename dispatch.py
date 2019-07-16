@@ -140,6 +140,7 @@ def dispatch(network: STN,
 
         # Pick an event to schedule
         for event in enabled:
+            print("event", event)
             lower_bound = time_windows[event][0]
             if event in uncontrollable_events:
                 if lower_bound < min_time:
@@ -221,6 +222,9 @@ def dispatch(network: STN,
                 print("***")
                 print("Checking event", event)
             if (event not in enabled) and (event not in uncontrollable_events):
+                print("enabled",enabled)
+                print("uncontrollable", uncontrollable_events)
+
                 ready = True
                 outgoing_reqs = dc_network.verts[event].outgoing_normal
                 # Check required constraints
@@ -233,10 +237,17 @@ def dispatch(network: STN,
                                       edge)
                             ready = False
                             break
+                    elif edge.weight == 0:
+                        if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                            if edge.j not in executed:
+                                ready = False
+                                break
 
                 # Check wait constraints
                 outgoing_upper = dc_network.verts[event].outgoing_upper
-                for edge in outgoing_upper:
+                if event == 3:
+                    print ("outgoing_upper", outgoing_upper)
+                for edge in outgoing_upper: 
                     if edge.weight < 0:
                         label_wait = (edge.parent not in executed)
                         main_wait = (edge.j not in executed)

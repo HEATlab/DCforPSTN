@@ -68,12 +68,14 @@ def maxgain(inputstn,
                     else:
                         # find the tightest contingent edges
                         tightest = bounds['contingent']
-                        if debug:
-                            print(list(tightest.items()), rounds)
+                        print(conflicts)
+                        print(len(tightest))
+                        print(len(tedges))
                         for i,j in list(tightest.keys()):
                             edge, bound = tightest[i,j]
-                            tedges.pop((edge.i, edge.j))
-                else:   
+                            if (edge.i, edge.j) in tedges.keys():
+                                tedges.pop((edge.i, edge.j))
+                else:
                     if debug:
                         print('could not produce dynamically controllable STNU.')
                     return None
@@ -160,33 +162,19 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
 if __name__ == "__main__":
     # directory = "dataset/uncontrollable"
     # data_list = glob.glob(os.path.join(directory, '*.json'))
-    # comparison = []
-    # for data in data_list:
-    #     print("loading",data)
-    #     stn = loadSTNfromJSONfile(data)
-    #     newstn = maxgain(stn, debug = True)
-    #     result = simulate_maxgain(stn, newstn, size = 500)
-    #     oldresult = simulation(stn,500)
-    #     comparison += [(result, oldresult)]
-    # sumNew = 0
-    # sumOld = 0
-    # improvementCount = 0
-    # equalCount = 0
-    # for i in range(len(comparison)):
-    #     sumNew += comparison[i][0]
-    #     sumOld += comparison[i][1]
-    #     if comparison[i][0] > comparison[i][1]:
-    #         improvementCount += 1
-    #     elif comparison[i][0] == comparison[i][1]:
-    #         equalCount += 1
-    # print(sumNew, sumOld, improvementCount, equalCount, len(comparison))
-    # print(comparison)
+
+
+    ## testing dream data ##
+
     directory = 'dataset/dreamdata/'
     folders = os.listdir(directory)
     data_list = []
     for folder in folders:
         data = glob.glob(os.path.join(directory, folder, '*.json'))
         data_list += data
+
+    # data_list = ['dataset/dreamdata/STN_a2_i4_s1_t4000/original_2.json']
+
     comparison = []
     improvement = 0
     tied = 0
@@ -195,15 +183,38 @@ if __name__ == "__main__":
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data, using_PSTN=True)
-        newstn = maxgain(stn, debug = False)
+        newstn = maxgain(stn, debug = True)
         result = simulate_maxgain(stn, newstn, size = 50)
-        oldresult = simulation(stn,50)
+        oldresult = simulation(stn,50, verbose=True)
         comparison += [(result, oldresult)]
         if result > oldresult:
             improvement += 1
         elif result == oldresult:
             tied += 1
     print(improvement, tied, comparison)
+
+    # directory = 'dataset/dreamdata/'
+    # folders = os.listdir(directory)
+    # data_list = []
+    # for folder in folders:
+    #     data = glob.glob(os.path.join(directory, folder, '*.json'))
+    #     data_list += data
+
+    # directory = "dataset/uncontrollable_full"
+    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    # data_list = ['dataset/uncontrollable_full/uncontrollable138.json']
+
+    # for data in data_list:
+    #     stn = loadSTNfromJSONfile(data, using_PSTN=True)
+    #     # oldresult = simulation(stn,50, verbose=False)
+    #     print(stn)
+    #     dc_network = STNtoDCSTN(stn)
+    #     print(dc_network)
+    #     result = simulation(stn, 1, verbose = True)
+    #     print(len(stn.edges))
+    #     print(len(dc_network.edges))
+
     
 
 
+ 
