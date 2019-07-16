@@ -10,6 +10,7 @@ import collections as ct
 # For faster checking in safely_scheduled
 import simulation as sim
 
+
 ##
 # \file dispatch.py
 # \brief Hosts method to dispatch STNUs that were modified by the
@@ -173,7 +174,6 @@ def dispatch(network: STN,
                     min_time = lower_bound
                     current_event = event
 
-        print("current event is", current_event)
 
         is_uncontrollable = current_event in uncontrollable_events
 
@@ -184,17 +184,17 @@ def dispatch(network: STN,
         schedule[current_event] = current_time
 
         # Quicker check for scheduling errors
-        if not sim.safely_scheduled(network, schedule, current_event):
-            if verbose:
-                print("------------------------------------------------------")
-                print("Failed -- event", current_event,
-                      "violated a constraint.")
-                print(
-                    f"At this time, we still had {len(not_executed)} "
-                    f"out of {len(dc_network.verts)} events left to schedule")
-                verbose = False
-                print("------------------------------------------------------")
-            return False
+        # if not sim.safely_scheduled(network, schedule, current_event):
+        #     if verbose:
+        #         print("------------------------------------------------------")
+        #         print("Failed -- event", current_event,
+        #               "violated a constraint.")
+        #         print(
+        #             f"At this time, we still had {len(not_executed)} "
+        #             f"out of {len(dc_network.verts)} events left to schedule")
+        #         verbose = False
+        #         print("------------------------------------------------------")
+        #     return False
 
         # If the executed event was a contingent source
         if current_event in contingent_map:
@@ -216,7 +216,6 @@ def dispatch(network: STN,
         not_executed.remove(current_event)
         enabled.remove(current_event)
         executed.add(current_event)
-        print("not executed are", not_executed)
 
         # Propagate the constraints
         for nodes, edge in dc_network.normal_edges.items():
@@ -247,6 +246,13 @@ def dispatch(network: STN,
                                       edge)
                             ready = False
                             break
+                    elif edge.weight == 0:
+                        if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                            if edge.j not in executed:
+                                ready = False
+                                break
+
+
 
                 # Check wait constraints
                 outgoing_upper = dc_network.verts[event].outgoing_upper
@@ -299,6 +305,8 @@ def makeExpectedSTN(network: STN):
     centerSTN = network.copy()
     for edge in centerSTN.edges:
         newVal = (network.getEdgeWeight(edge[0], edge[1]) - network.getEdgeWeight(edge[1], edge[0]))/2
+        if newVal == float('inf'):
+            newVal = min(network.getEdgeWeight(edge[0], edge[1]), network.getEdgeWeight(edge[1], edge[0]))
         centerSTN.modifyEdge(edge[0], edge[1], newVal)
         centerSTN.modifyEdge(edge[1], edge[0], - newVal)
     return centerSTN
@@ -322,13 +330,21 @@ def dispatchCenterTargeting(network: STN,
     time_windows = {event: [0, float('inf')] for event in not_executed}
     current_event = None
 
-    centerSTN = makeExpectedSTN(network)
-
     #pre-processing step
-    vertex_edge_map = ct.defaultdict(list)
+    incoming_edge_map = ct.defaultdict(list)
+    outgoing_edge_map = ct.defaultdict(list)
     for (vert_1, vert_2) in network.edges.keys():
-        vertex_edge_map[vert_2].append(network.edges[(vert_1,vert_2)])
-        vertex_edge_map[vert_1].append(network.edges[(vert_1,vert_2)])
+        incoming_edge_map[vert_2].append(network.edges[(vert_1,vert_2)])
+        outgoing_edge_map[vert_1].append(network.edges[(vert_1,vert_2)])
+
+    for vertex in network.verts:
+        #check if has no predecessors
+        if vertex != 0 and len(incoming_edge_map[vertex]) == 0:
+            enabled.add(vertex)
+            #network.addEdge(0, vertex, 0, float('inf'))
+            #incoming_edge_map[vertex].append(network.edges[(0, vertex)])
+
+    centerSTN = makeExpectedSTN(network)
 
     while len(not_executed) > 0:
         # Find next event to execute
@@ -340,23 +356,28 @@ def dispatchCenterTargeting(network: STN,
             if event in enabled:
                 continue
             #check if enabled
-            for edge in vertex_edge_map[event]:
-                if edge.i == event and edge.Cij <= 0:
-                    if edge.j not in executed:
-                        ready = False
-                        break
-                elif edge.j == event and edge.Cji <= 0:
-                    if edge.i not in executed:
-                        ready = False
-                        break
+            for edge in incoming_edge_map[event]:
+                if edge.i not in executed:
+                    ready = False
+                    break
             if ready:
                 enabled.add(event) 
         # choose event to execute
         for ready_event in enabled:
+            # TODO: IMPROVE HERE
             lower_bound = time_windows[ready_event][0]
             if lower_bound < min_time:
                 min_time = lower_bound
                 current_event = ready_event
+            elif lower_bound == min_time:
+                for dep_edge in outgoing_edge_map[current_event]:
+                    next_vert = dep_edge.j
+                    for dep_edge_2 in outgoing_edge_map[ready_event]:
+                        if next_vert == dep_edge_2.j:
+                            if centerSTN.getEdgeWeight(current_event, dep_edge) \
+                                > centerSTN.getEdgeWeight(ready_event, dep_edge_2):
+                                min_time = lower_bound
+                                current_event = ready_event
             
         # schedule the current event
         is_uncontrollable = current_event in uncontrollable_events
@@ -369,29 +390,33 @@ def dispatchCenterTargeting(network: STN,
         else:
             try:
                 range_freedom = float('inf')
-                for edge in vertex_edge_map[current_event]:
-                    if edge.Cij - edge.Cji < range_freedom:
-                        if edge.i == current_event and edge.Cij <= 0:
-                            prev_event = edge.j
-                            range_freedom = edge.Cij - edge.Cji
-                        elif edge.j == current_event and edge.Cji <= 0:
-                            prev_event = edge.i
-                            range_freedom = edge.Cij - edge.Cji
+                #print(incoming_edge_map[current_event])
+                for edge in incoming_edge_map[current_event]:
+                    if edge.Cij - edge.Cji <= range_freedom:
+                        prev_event = edge.i
+                        range_freedom = edge.Cij - edge.Cji
                 delay = relaxNextExecutable(network, centerSTN, current_event, prev_event)
+                # TODO: make sure we're not going back in time
                 current_time = schedule[prev_event] + delay
+                print(current_event)
+                print("executed after", delay)
             except KeyError:
-                delay = 0
+                delay = centerSTN.getEdgeWeight(prev_event, current_event)
 
         schedule[current_event] = current_time
 
-        # update the centered STN
-        centerSTN.modifyEdge(prev_event,current_event, delay)
-        centerSTN.modifyEdge(current_event, prev_event, -delay)
+        #print(schedule)
 
+        # update the centered STN
+        centerSTN.modifyEdge(prev_event, current_event, delay)
+        centerSTN.modifyEdge(current_event, prev_event, -delay)
 
         not_executed.remove(current_event)
         enabled.remove(current_event)
         executed.add(current_event)
+
+    print(schedule)
+
 
     good = empirical.scheduleIsValid(network, schedule)
     return good

@@ -258,7 +258,9 @@ def relaxSearch(STN):
 
 
 def relaxNextExecutable(network: STN, center_network: STN, up_node, down_node):
-    result, conflicts, bounds, weight, edges = DC_Checker_CT_version(center_network.copy(), report=False)
+
+    center = center_network.copy()
+    result, conflicts, bounds, weight, edges = DC_Checker_CT_version(center.copy(), report=False)
 
     changeable_edge = network.requirementEdges[(down_node, up_node)]
     edge_upper = changeable_edge.Cij
@@ -266,16 +268,20 @@ def relaxNextExecutable(network: STN, center_network: STN, up_node, down_node):
 
     edge_est = (edge_lower + edge_upper)/2
 
-    cw = False
-    for dc_edge in edges:
-        if dc_edge.i == down_node and dc_edge.j == up_node:
-            cw = True
+    set_edge = False
 
     # if conflict includes the edge we can change
-    if bounds['requirement'][(down_node, up_node)] != None:
-        # if adjustment won't throw us below bounds
+    cw = False
+    if (down_node, up_node) in bounds['requirement']:
+        # determine what direction traversal the weight is from
+        for dc_edge in edges:
+            if dc_edge.i == down_node and dc_edge.j == up_node:
+                cw = True
+        set_edge = True
         if cw:
             weight = -weight
+            
+        # if adjustment won't throw us below bounds
         if edge_est + weight >= edge_lower:
             # if adjustment won't throw us above bounds
             if edge_est + weight <= edge_upper:
@@ -286,11 +292,9 @@ def relaxNextExecutable(network: STN, center_network: STN, up_node, down_node):
                 edge_est = edge_upper
         else:
             edge_est = edge_lower
-
-    # print("--------")
-    # print("weight of conflict is", weight)
-    # print("requirement edge from ", down_node, " to ", up_node, " should be set to ", edge_est)
+    
     return edge_est
+
 
 
 

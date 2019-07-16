@@ -38,7 +38,7 @@ def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed, ct):
     
     #return result
 
-    # Save the results
+    #Save the results
     # with open(out_name, 'w') as f:
     #     json.dump(result, f)
     with open(out_name, 'w') as csv_file:
