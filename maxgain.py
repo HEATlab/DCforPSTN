@@ -57,7 +57,9 @@ def maxgain(inputstn,
             # finished our search, load the smallest alpha decoupling
 
             if upper - lower <= 1:
+                print('poppsdfafpdfpsfpsafpafpasfpasf')
                 if result is not None:
+                    print('popsdfs+++++++====')
                     if debug:
                         print('finished binary search, with lower', lower/1000, 'alpha', result[0], 'upper', upper/1000, 'rounds', rounds)
                     stncopy = alphaUpdate(stncopy, tedges, result[0])
@@ -123,6 +125,7 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
     total_victories = 0
     dc_network = STNtoDCSTN(shrinked_network)
     dc_network.addVertex(ZERO_ID)
+    print(dc_network)
 
     controllability = dc_network.is_DC()
     if verbose:
@@ -160,38 +163,11 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
 
 
 if __name__ == "__main__":
-    # directory = "dataset/uncontrollable"
-    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    directory = "dataset/uncontrollable_full"
+    data_list = glob.glob(os.path.join(directory, '*.json'))
 
 
-    ## testing dream data ##
-
-    directory = 'dataset/dreamdata/'
-    folders = os.listdir(directory)
-    data_list = []
-    for folder in folders:
-        data = glob.glob(os.path.join(directory, folder, '*.json'))
-        data_list += data
-
-    # data_list = ['dataset/dreamdata/STN_a2_i4_s1_t4000/original_2.json']
-
-    comparison = []
-    improvement = 0
-    tied = 0
-    total = len(data_list)
-
-    for data in data_list:
-        print("simulating", data)
-        stn = loadSTNfromJSONfile(data, using_PSTN=True)
-        newstn = maxgain(stn, debug = True)
-        result = simulate_maxgain(stn, newstn, size = 50)
-        oldresult = simulation(stn,50, verbose=True)
-        comparison += [(result, oldresult)]
-        if result > oldresult:
-            improvement += 1
-        elif result == oldresult:
-            tied += 1
-    print(improvement, tied, comparison)
+    # testing dream data ##
 
     # directory = 'dataset/dreamdata/'
     # folders = os.listdir(directory)
@@ -200,19 +176,34 @@ if __name__ == "__main__":
     #     data = glob.glob(os.path.join(directory, folder, '*.json'))
     #     data_list += data
 
-    # directory = "dataset/uncontrollable_full"
-    # data_list = glob.glob(os.path.join(directory, '*.json'))
-    # data_list = ['dataset/uncontrollable_full/uncontrollable138.json']
+    # data_list = ['dataset/dreamdata/STN_a2_i4_s5_t5000/original_9.json']
 
-    # for data in data_list:
-    #     stn = loadSTNfromJSONfile(data, using_PSTN=True)
-    #     # oldresult = simulation(stn,50, verbose=False)
-    #     print(stn)
-    #     dc_network = STNtoDCSTN(stn)
-    #     print(dc_network)
-    #     result = simulation(stn, 1, verbose = True)
-    #     print(len(stn.edges))
-    #     print(len(dc_network.edges))
+
+    # data_list = ['small_examples/dynamic1.json']
+
+    comparison = []
+    improvement = 0
+    tied = 0
+    total = len(data_list)
+    count = 0
+
+    for data in data_list:
+        print("simulating", data)
+        stn = loadSTNfromJSONfile(data)
+        newstn = maxgain(stn, debug = True)
+        a,b,c,d=DC_Checker(newstn)
+        newresult = simulate_maxgain(stn, newstn, 500)
+        oldresult = simulation(newstn, 500, verbose = False)
+        comparison += [(newresult, oldresult)]
+
+        count += 1
+        if newresult > oldresult:
+            improvement += 1
+        elif newresult == oldresult:
+            tied += 1
+        print("result ==========", improvement, tied, count, comparison)
+
+
 
     
 

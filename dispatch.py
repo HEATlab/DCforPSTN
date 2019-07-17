@@ -140,7 +140,7 @@ def dispatch(network: STN,
 
         # Pick an event to schedule
         for event in enabled:
-            print("event", event)
+            print("checking enabled event", event)
             lower_bound = time_windows[event][0]
             if event in uncontrollable_events:
                 if lower_bound < min_time:
@@ -170,6 +170,7 @@ def dispatch(network: STN,
                 print("This event is uncontrollable!")
         current_time = min_time
         schedule[current_event] = current_time
+        print('event', current_event,'is scheduled at', current_time)
 
         # Quicker check for scheduling errors
         if not sim.safely_scheduled(network, schedule, current_event):
@@ -222,8 +223,6 @@ def dispatch(network: STN,
                 print("***")
                 print("Checking event", event)
             if (event not in enabled) and (event not in uncontrollable_events):
-                print("enabled",enabled)
-                print("uncontrollable", uncontrollable_events)
 
                 ready = True
                 outgoing_reqs = dc_network.verts[event].outgoing_normal
@@ -238,15 +237,18 @@ def dispatch(network: STN,
                             ready = False
                             break
                     elif edge.weight == 0:
-                        if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                        if (edge.j, edge.i) in dc_network.edges:
+                            if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                                if edge.j not in executed:
+                                    ready = False
+                                    break
+                        else:
                             if edge.j not in executed:
                                 ready = False
                                 break
 
                 # Check wait constraints
                 outgoing_upper = dc_network.verts[event].outgoing_upper
-                if event == 3:
-                    print ("outgoing_upper", outgoing_upper)
                 for edge in outgoing_upper: 
                     if edge.weight < 0:
                         label_wait = (edge.parent not in executed)
@@ -283,17 +285,22 @@ def dispatch(network: STN,
 def generate_realization(network: STN, gauss = True) -> dict:
     realization = {}
     for nodes, edge in network.contingentEdges.items():
-        # if edge.dtype != 
-        #     realization[nodes[1]] = random.normalvariate(mu, sd)
-        # else:
-        #     realization[nodes[1]] = random.uniform(-edge.Cji, edge.Cij)
-        # if edge.type == "stcu":
-        #     realization[node[1]] = random.uniform(-edge.Cji, edge.Cij)
-        # else:
         assert edge.dtype != None
 
         if edge.dtype() == "gaussian":
-            realization[nodes[1]] = random.normalvariate(edge.mu, edge.sigma)
+            generated = random.gauss(edge.mu, edge.sigma)
+            # print()
+            # while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+            #     generated = random.gauss(edge.mu, edge.sigma)
+            # if generated < min(edge.Cji, edge.Cij) or generated > max(edge.Cji, edge.Cij):
+            #     print("======================================!!!=========", edge.Cji, 'gauss')
+            realization[nodes[1]] = generated
         elif edge.dtype() == "uniform":
-            realization[nodes[1]] = random.uniform(edge.dist_lb, edge.dist_ub)
+            generated = random.uniform(edge.dist_lb, edge.dist_ub)
+            # if generated < min(-edge.Cji, edge.Cij) or generated > max(edge.Cji, edge.Cij):
+            #     print("======================================!!!=========", edge.Cji, edge.dist_lb)
+            # while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+            #     generated = random.uniform(edge.dist_lb, edge.dist_ub)
+
+            realization[nodes[1]] = generated
     return realization
