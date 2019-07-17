@@ -61,6 +61,10 @@ def simulation(network: STN, size: int, verbose=False, gauss=False) -> float:
     controllability = dc_network.is_DC()
     if verbose:
         print("Finished checking DC...")
+    if controllability:
+        print("It is DC!")
+    else:
+        print('Bruh, it is not DC')
 
     # Detect if the network has an inconsistency in a fixed edge
     verts = dc_network.verts.keys()
@@ -140,7 +144,8 @@ def dispatch(network: STN,
 
         # Pick an event to schedule
         for event in enabled:
-            print("checking enabled event", event)
+            if verbose:
+                print("checking enabled event", event)
             lower_bound = time_windows[event][0]
             if event in uncontrollable_events:
                 if lower_bound < min_time:
@@ -170,7 +175,8 @@ def dispatch(network: STN,
                 print("This event is uncontrollable!")
         current_time = min_time
         schedule[current_event] = current_time
-        print('event', current_event,'is scheduled at', current_time)
+        if verbose:
+            print('event', current_event,'is scheduled at', current_time)
 
         # Quicker check for scheduling errors
         if not sim.safely_scheduled(network, schedule, current_event):
@@ -289,18 +295,13 @@ def generate_realization(network: STN, gauss = True) -> dict:
 
         if edge.dtype() == "gaussian":
             generated = random.gauss(edge.mu, edge.sigma)
-            # print()
-            # while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
-            #     generated = random.gauss(edge.mu, edge.sigma)
-            # if generated < min(edge.Cji, edge.Cij) or generated > max(edge.Cji, edge.Cij):
-            #     print("======================================!!!=========", edge.Cji, 'gauss')
+            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                generated = random.gauss(edge.mu, edge.sigma)
             realization[nodes[1]] = generated
         elif edge.dtype() == "uniform":
             generated = random.uniform(edge.dist_lb, edge.dist_ub)
-            # if generated < min(-edge.Cji, edge.Cij) or generated > max(edge.Cji, edge.Cij):
-            #     print("======================================!!!=========", edge.Cji, edge.dist_lb)
-            # while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
-            #     generated = random.uniform(edge.dist_lb, edge.dist_ub)
+            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                generated = random.uniform(edge.dist_lb, edge.dist_ub)
 
             realization[nodes[1]] = generated
     return realization

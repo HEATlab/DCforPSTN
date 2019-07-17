@@ -57,9 +57,7 @@ def maxgain(inputstn,
             # finished our search, load the smallest alpha decoupling
 
             if upper - lower <= 1:
-                print('poppsdfafpdfpsfpsafpafpasfpasf')
                 if result is not None:
-                    print('popsdfs+++++++====')
                     if debug:
                         print('finished binary search, with lower', lower/1000, 'alpha', result[0], 'upper', upper/1000, 'rounds', rounds)
                     stncopy = alphaUpdate(stncopy, tedges, result[0])
@@ -125,7 +123,6 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
     total_victories = 0
     dc_network = STNtoDCSTN(shrinked_network)
     dc_network.addVertex(ZERO_ID)
-    print(dc_network)
 
     controllability = dc_network.is_DC()
     if verbose:
@@ -139,6 +136,7 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
                 print("Checking", vert)
             edge = dc_network.edges[vert, vert][0]
             if edge.weight < 0:
+                print('-=======cici')
                 dc_network.edges[(vert, vert)].remove(edge)
                 dc_network.verts[vert].outgoing_normal.remove(edge)
                 dc_network.verts[vert].incoming_normal.remove(edge)
@@ -163,8 +161,13 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
 
 
 if __name__ == "__main__":
-    directory = "dataset/uncontrollable_full"
-    data_list = glob.glob(os.path.join(directory, '*.json'))
+    # directory = "dataset/uncontrollable_full"
+
+    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
+    # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
+    data_list = ['dataset/dreamdata/STN_a2_i4_s5_t10000/original_3.json']
+    
 
 
     # testing dream data ##
@@ -176,32 +179,35 @@ if __name__ == "__main__":
     #     data = glob.glob(os.path.join(directory, folder, '*.json'))
     #     data_list += data
 
-    # data_list = ['dataset/dreamdata/STN_a2_i4_s5_t5000/original_9.json']
-
-
-    # data_list = ['small_examples/dynamic1.json']
 
     comparison = []
     improvement = 0
     tied = 0
-    total = len(data_list)
+    failed = 0
     count = 0
 
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data)
         newstn = maxgain(stn, debug = True)
-        a,b,c,d=DC_Checker(newstn)
-        newresult = simulate_maxgain(stn, newstn, 500)
-        oldresult = simulation(newstn, 500, verbose = False)
-        comparison += [(newresult, oldresult)]
+        a,b,c,d = DC_Checker(newstn)
+        print(a)
 
+        newresult = simulate_maxgain(stn, newstn, 50)
+        oldresult = simulation(newstn, 50, verbose = False)
+        comparison += [(newresult, oldresult)]
+        # if newresult > .9 and newresult >= 3* oldresult:
+        #     print(data)
+        #     print(newresult, oldresult)
+        #     break
         count += 1
         if newresult > oldresult:
             improvement += 1
         elif newresult == oldresult:
             tied += 1
-        print("result ==========", improvement, tied, count, comparison)
+            if newresult == 0.0:
+                failed += 1
+        print("result ==========", improvement, tied, failed, count, comparison)
 
 
 
