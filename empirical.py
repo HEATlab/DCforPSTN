@@ -12,6 +12,7 @@ import json
 import os
 import random
 import math
+import csv
 
 ##
 # \file empirical.py
@@ -21,6 +22,39 @@ import math
 # -------------------------------------------------------------------------
 # Generating Results
 # -------------------------------------------------------------------------
+
+def compare_ml_reg(data_path, sim_num, out_name):
+
+    nested_folders = False
+    data_list = glob.glob(os.path.join(data_path, '*.json'))
+    if len(data_list) == 0:
+        folders = os.listdir(data_path)
+        data_list = []
+        for folder in folders:
+            data = glob.glob(os.path.join(data_path, folder, '*.json'))
+            data_list += data
+
+    result = {}
+
+    for data in data_list:
+        dispatch_ml = simulate_file(data, sim_num, False, False, True)
+        dispatch_reg = simulate_file(data, sim_num, False, False, False)
+
+        if not nested_folders:
+            path, name = os.path.split(data)
+            result[name] = [dispatch_ml, dispatch_reg]
+        else:
+            result[data] = [dispatch_ml, dispatch_reg]
+    
+    #return result
+
+    #Save the results
+    # with open(out_name, 'w') as f:
+    #     json.dump(result, f)
+    with open(out_name, 'w') as csv_file:
+        writer = csv.writer(csv_file)
+        for key, value in result.items():
+            writer.writerow([key, value[0], value[1]])
 
 
 def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):
