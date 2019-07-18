@@ -57,7 +57,7 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
 
     if relaxed:
         dispatching_network, count, cycles, weights = relaxSearch(network.copy())
-        if dispatching_network = None:
+        if dispatching_network == None:
             dispatching_network = network
     else:
         dispatching_network = network
