@@ -235,7 +235,7 @@ def relaxSearch(STN):
         epsilons = optimalRelax(bounds, weight)
         if not epsilons:
             print("The STNU cannot resolve the conflict...")
-            return None, 0, None
+            return None, 0, None, None
 
         for (i, j) in list(STN.contingentEdges.keys()):
             if j not in list(epsilons.keys()):
