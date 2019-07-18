@@ -43,6 +43,7 @@ def simulate_and_save(file_names: list, size: int, out_name: str):
 # \brief Record dispatch result for single file
 def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, ct=False) -> float:
     network = loadSTNfromJSONfile(file_name)
+    print("1")
     result = simulation(network, size, verbose, gauss, relaxed, ct)
     if verbose:
         print(f"{file_name} worked {100*result}% of the time.")
@@ -58,7 +59,11 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     uncontrollables = set(contingents.values())
 
     if relaxed:
+        print("2")
         dispatching_network, count, cycles, weights = relaxSearch(network.copy())
+        if dispatching_network == None:
+            print("2.5")
+            dispatching_network = network
     else:
         dispatching_network = network
 
@@ -133,6 +138,7 @@ def dispatch(network: STN,
 
     schedule = {}
 
+    print("3")
     time_windows = {event: [0, float('inf')] for event in not_executed}
     current_event = ZERO_ID
     if verbose:
@@ -152,6 +158,8 @@ def dispatch(network: STN,
 
         # Pick an event to schedule
         for event in enabled:
+            if verbose:
+                print("checking enabled event", event)
             lower_bound = time_windows[event][0]
             if event in uncontrollable_events:
                 if lower_bound < min_time:
@@ -174,7 +182,6 @@ def dispatch(network: STN,
                     min_time = lower_bound
                     current_event = event
 
-
         is_uncontrollable = current_event in uncontrollable_events
 
         if verbose:
@@ -182,24 +189,26 @@ def dispatch(network: STN,
                 print("This event is uncontrollable!")
         current_time = min_time
         schedule[current_event] = current_time
+        if verbose:
+            print('event', current_event,'is scheduled at', current_time)
 
         # Quicker check for scheduling errors
-        # if not sim.safely_scheduled(network, schedule, current_event):
-        #     if verbose:
-        #         print("------------------------------------------------------")
-        #         print("Failed -- event", current_event,
-        #               "violated a constraint.")
-        #         print(
-        #             f"At this time, we still had {len(not_executed)} "
-        #             f"out of {len(dc_network.verts)} events left to schedule")
-        #         verbose = False
-        #         print("------------------------------------------------------")
-        #     return False
+        if not sim.safely_scheduled(network, schedule, current_event):
+            if verbose:
+                print("------------------------------------------------------")
+                print("Failed -- event", current_event,
+                      "violated a constraint.")
+                print(
+                    f"At this time, we still had {len(not_executed)} "
+                    f"out of {len(dc_network.verts)} events left to schedule")
+                verbose = False
+                print("------------------------------------------------------")
+            return False
 
         # If the executed event was a contingent source
         if current_event in contingent_map:
             uncontrollable = contingent_map[current_event]
-            delay = realization[uncontrollable][0]
+            delay = realization[uncontrollable]
             set_time = current_time + delay
             enabled.add(uncontrollable)
             time_windows[uncontrollable] = [set_time, set_time]
@@ -234,6 +243,7 @@ def dispatch(network: STN,
                 print("***")
                 print("Checking event", event)
             if (event not in enabled) and (event not in uncontrollable_events):
+
                 ready = True
                 outgoing_reqs = dc_network.verts[event].outgoing_normal
                 # Check required constraints
@@ -247,16 +257,19 @@ def dispatch(network: STN,
                             ready = False
                             break
                     elif edge.weight == 0:
-                        if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                        if (edge.j, edge.i) in dc_network.edges:
+                            if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                                if edge.j not in executed:
+                                    ready = False
+                                    break
+                        else:
                             if edge.j not in executed:
                                 ready = False
                                 break
 
-
-
                 # Check wait constraints
                 outgoing_upper = dc_network.verts[event].outgoing_upper
-                for edge in outgoing_upper:
+                for edge in outgoing_upper: 
                     if edge.weight < 0:
                         label_wait = (edge.parent not in executed)
                         main_wait = (edge.j not in executed)
@@ -289,15 +302,22 @@ def dispatch(network: STN,
 ##
 # \fn generate_realization(network)
 # \brief Uniformly at random pick values for contingent edges in STNU
-def generate_realization(network: STN, gauss=False) -> dict:
+def generate_realization(network: STN, gauss = True) -> dict:
     realization = {}
     for nodes, edge in network.contingentEdges.items():
-        if gauss:
-            mu = (edge.Cji + edge.Cij)/2 
-            sd = (edge.Cij - edge.Cji)/4
-            realization[nodes[1]] = (random.normalvariate(mu, sd), nodes[0])
-        else:
-            realization[nodes[1]] = (random.uniform(-edge.Cji, edge.Cij), nodes[0])
+        assert edge.dtype != None
+
+        if edge.dtype() == "gaussian":
+            generated = random.gauss(edge.mu, edge.sigma)
+            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                generated = random.gauss(edge.mu, edge.sigma)
+            realization[nodes[1]] = generated
+        elif edge.dtype() == "uniform":
+            generated = random.uniform(edge.dist_lb, edge.dist_ub)
+            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                generated = random.uniform(edge.dist_lb, edge.dist_ub)
+
+            realization[nodes[1]] = generated
     return realization
 
 

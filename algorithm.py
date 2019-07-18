@@ -281,35 +281,3 @@ def DC_Checker(STN, report=True):
     return True, [], {}, 0
 
 
-    ##
-# \fn DC_Checker(STN, report=True)
-# \brief Check whether an input STNU is dynamically controllable
-#
-# \details An STNU is dynamically controllable if there is not semi-reducible
-#          negative cycles in its labeled graph.
-#
-# @param STN    an STN which we want to test
-#
-# @return Return True if the input STNU is dynamically controllable. Otherwise,
-#         return False, conflicts (in labeled graph), conflicts in original STNU,
-#         and weights of the negative cycle (conflict).
-def DC_Checker_CT_version(STN, report=True):
-    G, C, D = normal(STN.copy())
-    negNodes = G.getNegNodes()
-    novel = []
-    preds = {}
-
-    for v in negNodes:
-        result, edges, end = DCDijkstra(G, v, preds, novel, \
-                                                    [v], negNodes.copy())
-
-        if not result:
-            conflicts = extractConflict(edges, novel, preds)
-            bounds = getFinalResult(conflicts, STN, D, C, report=report)
-            weight = 0
-            for e in edges:
-                weight += e.weight
-
-            return False, conflicts, bounds, weight, edges
-
-    return True, [], {}, 0, []
