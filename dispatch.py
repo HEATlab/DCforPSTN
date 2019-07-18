@@ -146,6 +146,8 @@ def dispatch(network: STN,
 
         # Pick an event to schedule
         for event in enabled:
+            if verbose:
+                print("checking enabled event", event)
             lower_bound = time_windows[event][0]
             if event in uncontrollable_events:
                 if lower_bound < min_time:
@@ -175,6 +177,8 @@ def dispatch(network: STN,
                 print("This event is uncontrollable!")
         current_time = min_time
         schedule[current_event] = current_time
+        if verbose:
+            print('event', current_event,'is scheduled at', current_time)
 
         # Quicker check for scheduling errors
         if not sim.safely_scheduled(network, schedule, current_event):
@@ -205,9 +209,12 @@ def dispatch(network: STN,
                     if (current_event != edge.i) and (current_event != edge.j):
                         # Modifying the network
                         dc_network.remove_upper_edge(edge.i, edge.j)
-
-        not_executed.remove(current_event)
-        enabled.remove(current_event)
+        if current_event in not_executed:
+            not_executed.remove(current_event)
+        else:
+            return False
+        if current_event in enabled:
+            enabled.remove(current_event)
         executed.add(current_event)
 
         # Propagate the constraints
@@ -227,6 +234,7 @@ def dispatch(network: STN,
                 print("***")
                 print("Checking event", event)
             if (event not in enabled) and (event not in uncontrollable_events):
+
                 ready = True
                 outgoing_reqs = dc_network.verts[event].outgoing_normal
                 # Check required constraints
@@ -239,10 +247,20 @@ def dispatch(network: STN,
                                       edge)
                             ready = False
                             break
+                    elif edge.weight == 0:
+                        if (edge.j, edge.i) in dc_network.edges:
+                            if dc_network.edges[(edge.j, edge.i)][0].weight != 0:
+                                if edge.j not in executed:
+                                    ready = False
+                                    break
+                        else:
+                            if edge.j not in executed:
+                                ready = False
+                                break
 
                 # Check wait constraints
                 outgoing_upper = dc_network.verts[event].outgoing_upper
-                for edge in outgoing_upper:
+                for edge in outgoing_upper: 
                     if edge.weight < 0:
                         label_wait = (edge.parent not in executed)
                         main_wait = (edge.j not in executed)
@@ -275,13 +293,20 @@ def dispatch(network: STN,
 ##
 # \fn generate_realization(network)
 # \brief Uniformly at random pick values for contingent edges in STNU
-def generate_realization(network: STN, gauss=False) -> dict:
+def generate_realization(network: STN, gauss = True) -> dict:
     realization = {}
     for nodes, edge in network.contingentEdges.items():
-        if gauss:
-            mu = (edge.Cji + edge.Cij)/2 
-            sd = (edge.Cij - edge.Cji)/4
-            realization[nodes[1]] = random.normalvariate(mu, sd)
-        else:
-            realization[nodes[1]] = random.uniform(-edge.Cji, edge.Cij)
+        assert edge.dtype != None
+
+        if edge.dtype() == "gaussian":
+            generated = random.gauss(edge.mu, edge.sigma)
+            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                generated = random.gauss(edge.mu, edge.sigma)
+            realization[nodes[1]] = generated
+        elif edge.dtype() == "uniform":
+            generated = random.uniform(edge.dist_lb, edge.dist_ub)
+            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                generated = random.uniform(edge.dist_lb, edge.dist_ub)
+
+            realization[nodes[1]] = generated
     return realization

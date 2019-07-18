@@ -6,3 +6,5 @@ from .stn import Vertex, Edge, STN
 from .stnjsontools import (loadSTNfromJSON,
                           loadSTNfromJSONfile,
                           loadSTNfromJSONobj)
+
+from .distempirical import (invcdf_norm, invcdf_uniform)
