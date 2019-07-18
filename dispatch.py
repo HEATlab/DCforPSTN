@@ -207,9 +207,12 @@ def dispatch(network: STN,
                     if (current_event != edge.i) and (current_event != edge.j):
                         # Modifying the network
                         dc_network.remove_upper_edge(edge.i, edge.j)
-
-        not_executed.remove(current_event)
-        enabled.remove(current_event)
+        if current_event in not_executed:
+            not_executed.remove(current_event)
+        else:
+            return False
+        if current_event in enabled:
+            enabled.remove(current_event)
         executed.add(current_event)
 
         # Propagate the constraints

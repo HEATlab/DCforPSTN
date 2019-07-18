@@ -161,16 +161,16 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
 
 
 if __name__ == "__main__":
-    # directory = "dataset/uncontrollable_full"
+    directory = "dataset/uncontrollable_full"
 
-    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    data_list = glob.glob(os.path.join(directory, '*.json'))
     # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
     # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
-    data_list = ['dataset/dreamdata/STN_a2_i4_s5_t10000/original_3.json']
+    # data_list = ['dataset/dreamdata/STN_a2_i4_s5_t10000/original_3.json']
     
 
 
-    # testing dream data ##
+    # # testing dream data ##
 
     # directory = 'dataset/dreamdata/'
     # folders = os.listdir(directory)
@@ -189,12 +189,11 @@ if __name__ == "__main__":
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data)
-        newstn = maxgain(stn, debug = True)
+        newstn = maxgain(stn, debug = False)
         a,b,c,d = DC_Checker(newstn)
-        print(a)
 
-        newresult = simulate_maxgain(stn, newstn, 50)
-        oldresult = simulation(newstn, 50, verbose = False)
+        newresult = simulate_maxgain(stn, newstn, 100)
+        oldresult = simulation(stn, 100, verbose = False)
         comparison += [(newresult, oldresult)]
         # if newresult > .9 and newresult >= 3* oldresult:
         #     print(data)
