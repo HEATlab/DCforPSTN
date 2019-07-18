@@ -1,4 +1,4 @@
-ffrom stn import STN, loadSTNfromJSONfile
+from stn import STN, loadSTNfromJSONfile
 from LP import *
 from relax import *
 from util import *
