@@ -111,6 +111,54 @@ class Edge(object):
     def isContingent(self):
         return self.type != 'stc'
 
+    def dtype(self):
+        """Returns the distribution edge type as a String. If no there is
+            distribution for this edge, return None.
+        """
+        if self.distribution is None:
+            return None
+        if self.distribution[0] == "U":
+            return "uniform"
+        elif self.distribution[0] == "N":
+            return "gaussian"
+        else:
+            return "unknown"
+
+    @property
+    def mu(self):
+        name_split = self.distribution.split("_")
+        if len(name_split) != 3 or name_split[0] != "N":
+            raise ValueError("No mu for non-normal dist")
+        return float(name_split[1]) *1000
+
+    @property
+    def sigma(self):
+        name_split = self.distribution.split("_")
+        if len(name_split) != 3 or name_split[0] != "N":
+            raise ValueError("No sigma for non-normal dist")
+        return float(name_split[2]) *1000
+
+    @property
+    def dist_ub(self):
+        name_split = self.distribution.split("_")
+        if len(name_split) != 3 or name_split[0] != "U":
+            raise ValueError("No upper bound for non-uniform dist")
+        return float(name_split[2]) 
+    @property
+    def dist_lb(self):
+        name_split = self.distribution.split("_")
+        if len(name_split) != 3 or name_split[0] != "U":
+            raise ValueError("No lower bound for non-uniform dist")
+        return float(name_split[1]) 
+
+    def cap(self):
+        """Caps this edge's Cij and Cji properties to a "max" floating point
+            value.
+        """
+        self.Cij = min(MAX_FLOAT, max(-MAX_FLOAT, self.Cij))
+        self.Cji = min(MAX_FLOAT, max(-MAX_FLOAT, self.Cji))
+
+
     ## \brief The string representation of the edge
     def __repr__(self):
         return "Edge {} => {} [{}, {}], ".format(
