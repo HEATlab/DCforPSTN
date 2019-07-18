@@ -192,7 +192,7 @@ if __name__ == "__main__":
         newstn = maxgain(stn, debug = False)
         a,b,c,d = DC_Checker(newstn)
 
-        newresult = simulate_maxgain(stn, newstn, 100)
+        newresult = simulate_maxgain(stn, newstn, 150)
         oldresult = simulation(stn, 100, verbose = False)
         comparison += [(newresult, oldresult)]
         # if newresult > .9 and newresult >= 3* oldresult:
