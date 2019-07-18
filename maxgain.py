@@ -166,7 +166,7 @@ if __name__ == "__main__":
     data_list = glob.glob(os.path.join(directory, '*.json'))
     # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
     # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
-    # data_list = ['dataset/dreamdata/STN_a2_i4_s5_t10000/original_3.json']
+    data_list = ['dataset/dreamdata/STN_a2_i4_s5_t5000/original_4.json']
     
 
 
@@ -189,8 +189,10 @@ if __name__ == "__main__":
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data)
+        print(stn)
         newstn = maxgain(stn, debug = False)
-        a,b,c,d = DC_Checker(newstn)
+        a,b,c,d = DC_Checker(stn)
+        print(a)
 
         newresult = simulate_maxgain(stn, newstn, 150)
         oldresult = simulation(stn, 100, verbose = False)

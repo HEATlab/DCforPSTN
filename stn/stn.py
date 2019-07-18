@@ -332,6 +332,23 @@ class STN(object):
 
         self.edges[(i, j)] = edge
 
+    def floyd_warshall(self, create=False):
+        verts = self.verts
+        B = {}
+        for u in self.verts.keys():
+            for v in self.verts.keys():
+                B[(u, v)] = self.getEdgeWeight(u, v)
+        for k in verts.keys():
+            for i in verts.keys():
+                for j in verts.keys():
+                    B[(i, j)] = min(B[(i, j)], B[(i, k)] + B[(k, j)])
+                    self.updateEdge(i, j, B[(i, j)])
+
+        for e in self.getAllEdges():
+            if e.getWeightMin() > e.getWeightMax():
+                return False
+        return True
+
     # -------------------------------------------------------------------------
     # Vertex functions #
     # -------------------------------------------------------------------------
