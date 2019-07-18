@@ -1,4 +1,4 @@
-from stn import STN, loadSTNfromJSONfile
+ffrom stn import STN, loadSTNfromJSONfile
 from LP import *
 from relax import *
 from util import *
@@ -22,13 +22,14 @@ import math
 # Generating Results
 # -------------------------------------------------------------------------
 
-def generate_DDC_result(data_path, sim_num, out_name, gauss):
+
+def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):
     data_list = glob.glob(os.path.join(data_path, '*.json'))
 
     result = {}
 
     for data in data_list:
-        dispatch = simulate_file(data, sim_num, False, gauss)
+        dispatch = simulate_file(data, sim_num, False, gauss, relaxed)
         ddc = prob_of_DC_file(data, gauss)
 
         path, name = os.path.split(data)
