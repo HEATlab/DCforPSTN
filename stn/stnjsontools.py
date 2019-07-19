@@ -76,3 +76,4 @@ def loadSTNfromJSONobj(jsonSTN, using_PSTN=True):
                         float(e['min_duration']), float(e['max_duration']))
 
     return stn
+

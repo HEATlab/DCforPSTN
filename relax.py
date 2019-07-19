@@ -224,10 +224,11 @@ def relaxTotalLength(bounds, weight):
 def relaxSearch(STN):
     result, conflicts, bounds, weight = DC_Checker(STN.copy(), report=False)
 
+    max_relax = len(STN.edges)
     count = 0
     cycles = []
     weights = []
-    while not result:
+    while not result and count <= max_relax:
         edges = [x[0] for x in list(bounds['contingent'].values())]
         cycles.append(edges)
         weights.append(weight)
@@ -251,4 +252,7 @@ def relaxSearch(STN):
         result, conflicts, bounds, weight = DC_Checker(
             STN.copy(), report=False)
 
-    return STN, count, cycles, weights
+    if result:
+        return STN, count, cycles, weights
+    else:
+        return None, 0, None, None

@@ -37,6 +37,7 @@ def compare_ml_reg(data_path, sim_num, out_name):
     result = {}
 
     for data in data_list:
+        print("executing:", data)
         dispatch_ml = simulate_file(data, sim_num, False, False, True)
         dispatch_reg = simulate_file(data, sim_num, False, False, False)
 
@@ -208,7 +209,6 @@ def scheduleIsValid(network: STN, schedule: dict) -> STN:
         try:
             assert vertexID in schedule
         except AssertionError:
-            print(vertexID)
             return False
 
     # Check that the schedule is valid
