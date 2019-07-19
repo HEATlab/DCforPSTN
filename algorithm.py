@@ -196,14 +196,14 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
     Q = PriorityQueue()
     labelDist = {}
     unlabelDist = {}
-    labelDist[start] = (0, None)
-    unlabelDist[start] = (0, None)
+    labelDist[start] = (0, -1)
+    unlabelDist[start] = (0, -1)
     epsilon = 1e-5
 
     for edge in G.incomingEdges(start):
         if edge.weight < 0:
             Q.push((edge.i, edge.parent), edge.weight)
-            if edge.parent == None:
+            if edge.parent == -1:
                 unlabelDist[edge.i] = (edge.weight, edge)
             else:
                 labelDist[edge.i] = (edge.weight, edge)
@@ -237,7 +237,7 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
             if edge.weight >= 0 and (edge.type != edgeType.LOWER or \
                                                         edge.parent != label):
                 w = edge.weight + weight
-                distArray = labelDist if label != None else unlabelDist
+                distArray = labelDist if label != -1 else unlabelDist
 
                 if edge.i not in distArray or w < distArray[edge.i][0]:
                     distArray[edge.i] = (w, edge)
