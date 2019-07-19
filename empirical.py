@@ -40,11 +40,7 @@ def compare_ml_reg(data_path, sim_num, out_name):
         dispatch_ml = simulate_file(data, sim_num, False, False, True)
         dispatch_reg = simulate_file(data, sim_num, False, False, False)
 
-        if not nested_folders:
-            path, name = os.path.split(data)
-            result[name] = [dispatch_ml, dispatch_reg]
-        else:
-            result[data] = [dispatch_ml, dispatch_reg]
+        result[data] = [dispatch_ml, dispatch_reg]
     
     #return result
 
@@ -209,23 +205,28 @@ def scheduleIsValid(network: STN, schedule: dict) -> STN:
     vertices = network.getAllVerts()
     for vertex in vertices:
         vertexID = vertex.nodeID
-        assert vertexID in schedule
+        try:
+            assert vertexID in schedule
+        except AssertionError:
+            print(vertexID)
+            return False
 
     # Check that the schedule is valid
     edges = network.getAllEdges()
     for edge in edges:
+        if edge.type == 'stc' or edge.type == None:
         # Loop through the constraints
-        start = edge.i
-        fin   = edge.j
-        uBound = edge.Cij
-        lBound = -edge.Cji
+            start = edge.i
+            fin   = edge.j
+            uBound = edge.Cij
+            lBound = -edge.Cji
 
-        boundedAbove = (schedule[fin] - schedule[start]) <= uBound + epsilon
-        boundedBelow = (schedule[fin] - schedule[start]) >= lBound - epsilon
+            boundedAbove = (schedule[fin] - schedule[start]) <= uBound + epsilon
+            boundedBelow = (schedule[fin] - schedule[start]) >= lBound - epsilon
 
-        # Check if constraint is not satisfied
-        if ((not boundedAbove) or (not boundedBelow)):
-            return False
+            # Check if constraint is not satisfied
+            if ((not boundedAbove) or (not boundedBelow)):
+                return False
 
     return True
 

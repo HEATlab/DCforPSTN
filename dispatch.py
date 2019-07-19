@@ -56,7 +56,7 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     uncontrollables = set(contingents.values())
 
     if relaxed:
-        dispatching_network, count, cycles, weights = relaxSearch(network.copy())
+        dispatching_network, count, cycles, weights = relaxSearch(getMinLossBounds(network.copy(), 2))
         if dispatching_network == None:
             dispatching_network = network
     else:
@@ -99,6 +99,20 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
         print(f"Worked {100*goodie}% of the time.")
 
     return goodie
+
+##
+# \fn getMinLossBounds(network, numSig)
+# \brief Create copy of network with bounds related to spread
+def getMinLossBounds(network: STN, numSig):
+    for nodes, edge in network.edges.items():
+        if edge.type == 'pstc' and edge.dtype == 'gaussian':
+            sigma = edge.sigma
+            mu = edge.mu
+            edge.Cij = mu + numSig * sigma
+            edge.Cji = -(mu - numSig * sigma)
+    return network
+
+
 
 
 ##
