@@ -196,17 +196,19 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
     Q = PriorityQueue()
     labelDist = {}
     unlabelDist = {}
-    labelDist[start] = (0, -1)
-    unlabelDist[start] = (0, -1)
+    labelDist[start] = (0, None)
+    unlabelDist[start] = (0, None)
     epsilon = 1e-5
 
     for edge in G.incomingEdges(start):
         if edge.weight < 0:
-            Q.push((edge.i, edge.parent), edge.weight)
-            if edge.parent == -1:
+            if edge.parent == None:
                 unlabelDist[edge.i] = (edge.weight, edge)
+                Q.push((edge.i, -1), edge.weight)
             else:
                 labelDist[edge.i] = (edge.weight, edge)
+                Q.push((edge.i, edge.parent), edge.weight)
+            
 
     if start in callStack[1:]:
         return False, [], start
@@ -279,3 +281,5 @@ def DC_Checker(STN, report=True):
             return False, conflicts, bounds, weight
 
     return True, [], {}, 0
+
+
