@@ -122,7 +122,7 @@ def resolveNovel(e, novel, preds):
 # @return A dictionary containing information about the original constraints
 #         in the original STNU that we can relax and whether LOWER or UPPER
 #         bound can be relaxed
-def getFinalResult(conflicts, STN, D, C, report=False):
+def getFinalResult(conflicts, STN, D, C, report=True):
     ## Initialize the result dictionary
     result = {}
     result['requirement'] = {}
@@ -202,11 +202,13 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
 
     for edge in G.incomingEdges(start):
         if edge.weight < 0:
-            Q.push((edge.i, edge.parent), edge.weight)
             if edge.parent == None:
                 unlabelDist[edge.i] = (edge.weight, edge)
+                Q.push((edge.i, -1), edge.weight)
             else:
                 labelDist[edge.i] = (edge.weight, edge)
+                Q.push((edge.i, edge.parent), edge.weight)
+            
 
     if start in callStack[1:]:
         return False, [], start
@@ -237,7 +239,7 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
             if edge.weight >= 0 and (edge.type != edgeType.LOWER or \
                                                         edge.parent != label):
                 w = edge.weight + weight
-                distArray = labelDist if label != None else unlabelDist
+                distArray = labelDist if label != -1 else unlabelDist
 
                 if edge.i not in distArray or w < distArray[edge.i][0]:
                     distArray[edge.i] = (w, edge)
@@ -259,7 +261,7 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
 # @return Return True if the input STNU is dynamically controllable. Otherwise,
 #         return False, conflicts (in labeled graph), conflicts in original STNU,
 #         and weights of the negative cycle (conflict).
-def DC_Checker(STN, report=False):
+def DC_Checker(STN, report=True):
     G, C, D = normal(STN.copy())
     negNodes = G.getNegNodes()
     novel = []

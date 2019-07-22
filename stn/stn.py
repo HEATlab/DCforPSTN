@@ -342,8 +342,9 @@ class STN(object):
             for i in verts.keys():
                 for j in verts.keys():
                     B[(i, j)] = min(B[(i, j)], B[(i, k)] + B[(k, j)])
-                    self.updateEdge(i, j, B[(i, j)])
-
+                    xixi = self.updateEdge(i, j, B[(i, j)])
+                    if xixi:
+                        print(i,j)
         for e in self.getAllEdges():
             if e.getWeightMin() > e.getWeightMax():
                 return False

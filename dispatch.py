@@ -1,3 +1,4 @@
+
 from stn import STN, loadSTNfromJSONfile
 from util import STNtoDCSTN, PriorityQueue
 from dc_stn import DC_STN
@@ -56,7 +57,9 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     uncontrollables = set(contingents.values())
 
     if relaxed:
-        dispatching_network, count, cycles, weights = relaxSearch(network.copy())
+        dispatching_network, count, cycles, weights = relaxSearch(getMinLossBounds(network.copy(), 2))
+        if dispatching_network == None:
+            dispatching_network = network
     else:
         dispatching_network = network
 
@@ -97,6 +100,20 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
         print(f"Worked {100*goodie}% of the time.")
 
     return goodie
+
+##
+# \fn getMinLossBounds(network, numSig)
+# \brief Create copy of network with bounds related to spread
+def getMinLossBounds(network: STN, numSig):
+    for nodes, edge in network.edges.items():
+        if edge.type == 'pstc' and edge.dtype == 'gaussian':
+            sigma = edge.sigma
+            mu = edge.mu
+            edge.Cij = mu + numSig * sigma
+            edge.Cji = -(mu - numSig * sigma)
+    return network
+
+
 
 
 ##
@@ -180,18 +197,6 @@ def dispatch(network: STN,
         if verbose:
             print('event', current_event,'is scheduled at', current_time)
 
-        # Quicker check for scheduling errors
-        if not sim.safely_scheduled(network, schedule, current_event):
-            if verbose:
-                print("------------------------------------------------------")
-                print("Failed -- event", current_event,
-                      "violated a constraint.")
-                print(
-                    f"At this time, we still had {len(not_executed)} "
-                    f"out of {len(dc_network.verts)} events left to schedule")
-                verbose = False
-                print("------------------------------------------------------")
-            return False
 
         # If the executed event was a contingent source
         if current_event in contingent_map:
@@ -293,7 +298,7 @@ def dispatch(network: STN,
 ##
 # \fn generate_realization(network)
 # \brief Uniformly at random pick values for contingent edges in STNU
-def generate_realization(network: STN, gauss = True) -> dict:
+def generate_realization(network: STN, gauss=True) -> dict:
     realization = {}
     for nodes, edge in network.contingentEdges.items():
         assert edge.dtype != None
@@ -301,6 +306,7 @@ def generate_realization(network: STN, gauss = True) -> dict:
         if edge.dtype() == "gaussian":
             generated = random.gauss(edge.mu, edge.sigma)
             while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                print("hot ham", edge.Cji, edge.Cij)
                 generated = random.gauss(edge.mu, edge.sigma)
             realization[nodes[1]] = generated
         elif edge.dtype() == "uniform":

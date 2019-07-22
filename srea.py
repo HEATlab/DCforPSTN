@@ -13,6 +13,7 @@ import random
 import glob
 import json
 import os
+from algorithm import *
 
 
 # \file SREA.py
@@ -63,7 +64,7 @@ def setUpLP(stn, decouple):
                                            lowBound=-stn.getEdgeWeight(i, 0),
                                            upBound=stn.getEdgeWeight(0, i))
         condition = bounds[(i, '+')] >= bounds[(i, '-')]
-        addConstraint(condition, prob)
+        addConstraint(condition, prob) 
 
     for i, j in stn.edges:
         if (i, j) in stn.contingentEdges:
@@ -124,6 +125,8 @@ def srea(inputstn,
     if not decouple:
         # TODO: Change to faster algorithm?
         inputstn.floyd_warshall()
+        print(inputstn)
+
     bounds, deltas, probBase = setUpLP(inputstn, decouple)
 
     # First run binary search on alpha
@@ -172,7 +175,7 @@ def srea(inputstn,
     if result is None:
         if debug:
             print('could not produce feasible LP.')
-        return None
+        return 1,None
 
     # Fail here
     assert(False)
@@ -219,10 +222,6 @@ def srea_LP(inputstn,
             p_ji = -invcdf_norm(alpha * 0.5, edge.mu, edge.sigma)
             limit_ij = invcdf_norm(0.997, edge.mu, edge.sigma)
             limit_ji = -invcdf_norm(0.003, edge.mu, edge.sigma)
-            # p_ij = 1000*invCDF_map[edge.distribution][one_minus_alpha]
-            # p_ji = -1000*invCDF_map[edge.distribution][alpha]
-            # limit_ij = 1000*invCDF_map[edge.distribution]['1.0']
-            # limit_ji = -1000*invCDF_map[edge.distribution]['0.0']
         elif edge.dtype() == "uniform":
             p_ij = invcdf_uniform(1.0 - alpha * 0.5, edge.dist_lb,
                                   edge.dist_ub)
@@ -277,33 +276,44 @@ def srea_LP(inputstn,
 
 
 
+
 if __name__ == "__main__":
-    directory = "dataset/uncontrollable_full"
-
-    data_list = glob.glob(os.path.join(directory, '*.json'))
-    # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
-    # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
-    data_list = ['dataset/dreamdata/STN_a2_i4_s5_t5000/original_4.json']
-    
-
-
-    # # testing dream data ##
-
-    # directory = 'dataset/dreamdata/'
-    # folders = os.listdir(directory)
-    # data_list = []
-    # for folder in folders:
-    #     data = glob.glob(os.path.join(directory, folder, '*.json'))
-    #     data_list += data
-
-
     comparison = []
     improvement = 0
     tied = 0
     failed = 0
     count = 0
+    directory = "dataset/uncontrollable_full"
 
+    data_list = glob.glob(os.path.join(directory, '*.json'))
+    # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
+    # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
+    data_list = ['dataset/dreamdata/STN_a2_i4_s5_t5000/original_6.json']
+
+
+
+    # testing dream data ##
+
+    directory = 'dataset/dreamdata/'
+    folders = os.listdir(directory)
+    data_list = []
+    result = []
+    for folder in folders:
+        data = glob.glob(os.path.join(directory, folder, '*.json'))
+        data_list += data
+    
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data)
-        alpha, newstn = srea(stn)
+        inputstn = stn.copy()
+        inputstn.floyd_warshall()
+        alpha, outputstn = srea(inputstn)
+        if outputstn != None:
+            a,b,c,d = DC_Checker(outputstn)   
+            if not a:
+                result += [data, alpha] 
+    print(result)
+    print(len(result))
+
+
+        # alpha, newstn = srea(stn, debugLP = True)
