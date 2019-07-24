@@ -1,6 +1,6 @@
 from util import *
 from pulp import *
-
+import math
 
 ##
 # \brief A global variable that stores the max float that will be used to deal
@@ -87,9 +87,9 @@ def setUpCentering(STN, proportion=False, maxmin=False):
 
     for i,j in STN.edges:
         if (i,j) in STN.contingentEdges:
-            offsets[(i,j)] = LpVariable('eps_%i_hi'%j, lowBound=0,
+            offsets[(i,j)] = LpVariable('eps_%i'%j, lowBound=0,
                                                             upBound=None)
-            deltas[(i,j)] = LpVariable('eps_%i_hi'%j, lowBound= -offsets[(i,j)],
+            deltas[(i,j)] = LpVariable('delta_%i'%j, lowBound= -offsets[(i,j)],
                                                             upBound=offsets[(i,j)])
 
 
@@ -115,7 +115,7 @@ def setUpCentering(STN, proportion=False, maxmin=False):
     return (bounds, offsets, prob)
 
 def centeringLP(STN, debug=False):
-    bounds, offsets, prob = setUp(STN)
+    bounds, offsets, prob = setUpCentering(STN)
     
     Obj = sum([offsets[(i,j)] for i,j in offsets])
 
@@ -144,10 +144,9 @@ def centeringLP(STN, debug=False):
 
 def setUpScheduling(STN, debug=False):
     timepoints = {}
-    deltas = {}
-    offsets = {}
 
-    prob = LpProblem('Expected Value LP', LpMinimize)
+    prob = LpProblem('Robust Scheduling LP', LpMaximize)
+    radius = LpVariable('rad', lowBound=0, upBound=None)
 
     # ##
     # NOTE: Our LP requires each event to occur within a finite interval. If
@@ -171,21 +170,18 @@ def setUpScheduling(STN, debug=False):
     # Not part of LP yet
     # ##
     for i in STN.verts:
-        timepoints[i] = LpVariable('t_%i'%i, lowBound=0, upBound=)
+        timepoints[i] = LpVariable('t_%i'%i, lowBound=0, upBound=None)
 
 
     for i,j in STN.edges:
         if (i,j) in STN.contingentEdges:
-            offsets[(i,j)] = LpVariable('eps_%i_hi'%j, lowBound=0,
-                                                            upBound=None)
-            deltas[(i,j)] = LpVariable('eps_%i_hi'%j, lowBound= -offsets[(i,j)],
-                                                            upBound=offsets[(i,j)])
+            if i==0 or j==0:
+                addConstraint(timepoints[j] - timepoints[i] <= \
+                    STN.getEdgeWeight(i,j) + radius, prob)
 
-
-            addConstraint(bounds[(j,'+')] - bounds[(i,'+')] ==
-                    STN.getEdgeWeight(i,j) + deltas[(i,j)], prob)
-            addConstraint(bounds[(j,'-')] - bounds[(i,'-')] ==
-                    -STN.getEdgeWeight(j,i) + deltas[(i,j)], prob)
+            else:
+                addConstraint(timepoints[j] - timepoints[i] <= \
+                    STN.getEdgeWeight(i,j) + math.sqrt(2)*radius, prob)
 
         else:
             # NOTE: We need to handle the infinite weight edges. Otherwise
@@ -195,8 +191,34 @@ def setUpScheduling(STN, debug=False):
             lowbound = MAX_FLOAT if STN.getEdgeWeight(j,i) == float('inf') \
                                             else STN.getEdgeWeight(j,i)
 
-            addConstraint(bounds[(j,'+')]-bounds[(i,'-')] <= upbound, prob)
-            addConstraint(bounds[(i,'+')]-bounds[(j,'-')] <= lowbound, prob)
+            addConstraint(timepoints[j] - timepoints[i] <= upbound, prob)
+            addConstraint(timepoints[i] - timepoints[j] <= lowbound, prob)
 
-    return (bounds, offsets, prob)
+    return (timepoints, radius, prob)
 
+def scheduleLP(STN, debug=False):
+    timepoints, radius, prob = setUpScheduling(STN)
+    
+    Obj = radius
+
+    prob += Obj, "Maximize the robustness of the schedule"
+
+    try:
+        prob.solve()
+    except Exception:
+        print("The model is invalid.")
+        return 'Invalid', None, None
+
+    # Report status message
+    status = LpStatus[prob.status]
+    if debug:
+        print("Status: ", status)
+
+        for v in prob.variables():
+            print(v.name, '=', v.varValue)
+
+    if status != 'Optimal':
+        print("The solution for LP is not optimal")
+        return status, None, None
+
+    return status, timepoints, radius
