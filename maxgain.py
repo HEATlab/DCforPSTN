@@ -17,6 +17,10 @@ def maxgain(inputstn,
          lb=0.0,
          ub=0.999):
     stncopy = inputstn.copy()
+
+    # a,b,c,d = DC_Checker(stncopy)
+    # if a:
+    #     return stncopy
     # dictionary of alphas for binary search
 
     alphas = {i: i / 1000.0 for i in range(1001)}
@@ -134,7 +138,6 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
                 print("Checking", vert)
             edge = dc_network.edges[vert, vert][0]
             if edge.weight < 0:
-                print('-=======cici')
                 dc_network.edges[(vert, vert)].remove(edge)
                 dc_network.verts[vert].outgoing_normal.remove(edge)
                 dc_network.verts[vert].incoming_normal.remove(edge)
@@ -159,9 +162,9 @@ def simulate_maxgain(network, shrinked_network, size=200, verbose=False, gauss=T
 
 
 if __name__ == "__main__":
-    # directory = "dataset/uncontrollable_full"
+    directory = "dataset/dynamically_controllable"
 
-    # data_list = glob.glob(os.path.join(directory, '*.json'))
+    data_list = glob.glob(os.path.join(directory, '*.json'))
     # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
     # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
     # data_list = ['dataset/dreamdata/STN_a2_i4_s1_t4000/original_9.json']
@@ -171,12 +174,12 @@ if __name__ == "__main__":
 
     ##testing dream data ##
 
-    directory = 'dataset/dreamdata/'
-    folders = os.listdir(directory)
-    data_list = []
-    for folder in folders:
-        data = glob.glob(os.path.join(directory, folder, '*.json'))
-        data_list += data
+    # directory = 'dataset/dreamdata/'
+    # folders = os.listdir(directory)
+    # data_list = []
+    # for folder in folders:
+    #     data = glob.glob(os.path.join(directory, folder, '*.json'))
+    #     data_list += data
     # data_list = ['dataset/dreamdata/STN_a2_i4_s1_t4000/original_9.json']
 
     comparison = []
@@ -189,32 +192,30 @@ if __name__ == "__main__":
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data)
-        newstn = maxgain(stn, debug = True)
-        a,b,c,d = DC_Checker(newstn)
+        newstn = maxgain(stn, debug = False)
+        print('hotham')
         # if a:
         #     result = simulate_maxgain(stn, 100, verbose = False)
         #     print(result)
         #     break
-        newresult = simulate_maxgain(stn, newstn,500)
-        oldresult = simulation(stn, 500, verbose = False)
-        print(a)
-        if a and oldresult < .9:
-            bad_data += [(data, oldresult)]
-        comparison += [(newresult, oldresult, data)]
-        # if newresult > .9 and newresult >= 3* oldresult:
-        #     print(data)
-        #     print(newresult, oldresult)
-        #     break
-        count += 1
-        if newresult > oldresult:
-            improvement += 1
-        elif newresult == oldresult:
-            tied += 1
-            if newresult == 0.0:
-                failed += [data]
-        print("result ==========", improvement, tied, count, comparison)
+        print(stn)
+        print(newstn)
+        # newresult = simulate_maxgain(stn, newstn,50)
+        # print('c')
+        # oldresult = simulation(stn,50, verbose = False)
+        # if a and oldresult < .9:
+        #     bad_data += [(data, oldresult)]
+        # comparison += [(newresult, oldresult, data)]
+        # count += 1
+        # if newresult > oldresult:
+        #     improvement += 1
+        # elif newresult == oldresult:
+        #     tied += 1
+        #     if newresult == 0.0:
+        #         failed += [data]
+        # comparison += [(newresult, oldresult)]
+        print(comparison)
 
-        print(len(failed))
     # text_file = open("weird.txt", "w")
     # text_file.write(str(bad_data))
     # text_file.close()

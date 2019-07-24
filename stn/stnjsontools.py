@@ -58,27 +58,32 @@ def loadSTNfromJSONobj(jsonSTN, using_PSTN=True):
             stn.addEdge(0, v['node_id'], float(v['min_domain']),
                 float(v['max_domain']))
         else:
-            stn.addEdge(0,v['node_id'], float(0), float('inf'))
+            if not stn.edgeExists(0, v['node_id']):
+                stn.addEdge(0,v['node_id'], float(0), float('inf'))
 
 
     # Add the edges
     for e in jsonSTN['constraints']:
-        if using_PSTN and 'distribution' in e:
-            stn.addEdge(e['first_node'], e['second_node'],
-                        float(e['min_duration']), float(e['max_duration']),
-                        e['distribution']['type'], e['distribution']['name'])
-        elif 'type' in e:
-            if e['type'] == 'stcu':
-                dist = "U_"+str(e['min_duration']) + "_" + str(e['max_duration'])
+        if stn.edgeExists(e['first_node'], e['second_node']):
+            stn.updateEdge(e['first_node'], e['second_node'],float(e['max_duration']))
+            stn.updateEdge(e['second_node'], e['first_node'],float(e['min_duration']))
+        else:
+            if using_PSTN and 'distribution' in e:
                 stn.addEdge(e['first_node'], e['second_node'],
-                    float(e['min_duration']), float(e['max_duration']),
-                    e['type'], dist)
+                            float(max(0,e['min_duration'])), float(e['max_duration']),
+                            e['distribution']['type'], e['distribution']['name'])
+            elif 'type' in e:
+                if e['type'] == 'stcu':
+                    dist = "U_"+str(e['min_duration']) + "_" + str(e['max_duration'])
+                    stn.addEdge(e['first_node'], e['second_node'],
+                        float(max(0,e['min_duration'])), float(e['max_duration']),
+                        e['type'], dist)
+                else:
+                    stn.addEdge(e['first_node'], e['second_node'],
+                                float(e['min_duration']), float(e['max_duration']),
+                                e['type'])
             else:
                 stn.addEdge(e['first_node'], e['second_node'],
-                            float(e['min_duration']), float(e['max_duration']),
-                            e['type'])
-        else:
-            stn.addEdge(e['first_node'], e['second_node'],
-                        float(e['min_duration']), float(e['max_duration']))
+                            float(e['min_duration']), float(e['max_duration']))
 
     return stn

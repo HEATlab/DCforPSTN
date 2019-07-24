@@ -261,7 +261,7 @@ def DCDijkstra(G, start, preds, novel, callStack, negNodes):
 # @return Return True if the input STNU is dynamically controllable. Otherwise,
 #         return False, conflicts (in labeled graph), conflicts in original STNU,
 #         and weights of the negative cycle (conflict).
-def DC_Checker(STN, report=True):
+def DC_Checker(STN, report=False):
     G, C, D = normal(STN.copy())
     negNodes = G.getNegNodes()
     novel = []

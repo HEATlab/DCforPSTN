@@ -306,13 +306,16 @@ def generate_realization(network: STN, gauss=True) -> dict:
         if edge.dtype() == "gaussian":
             generated = random.gauss(edge.mu, edge.sigma)
             while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
-                print("hot ham", edge.Cji, edge.Cij)
                 generated = random.gauss(edge.mu, edge.sigma)
             realization[nodes[1]] = generated
         elif edge.dtype() == "uniform":
             generated = random.uniform(edge.dist_lb, edge.dist_ub)
+            counter = 0
             while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
                 generated = random.uniform(edge.dist_lb, edge.dist_ub)
+                counter += 1
+                if counter > 1000:
+                    print('over 1000 regenerations')
 
             realization[nodes[1]] = generated
     return realization

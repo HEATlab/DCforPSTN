@@ -59,10 +59,10 @@ def setUpLP(stn, decouple):
     for i in stn.verts:
         bounds[(i, '+')] = pulp.LpVariable('t_%d_hi' % i,
                                            lowBound=-stn.getEdgeWeight(i, 0),
-                                           upBound=stn.getEdgeWeight(0, i))
+                                           upBound = min(100000,stn.getEdgeWeight(0, i)))
         bounds[(i, '-')] = pulp.LpVariable('t_%d_lo' % i,
                                            lowBound=-stn.getEdgeWeight(i, 0),
-                                           upBound=stn.getEdgeWeight(0, i))
+                                           upBound = min(100000,stn.getEdgeWeight(0, i)))
         condition = bounds[(i, '+')] >= bounds[(i, '-')]
         addConstraint(condition, prob) 
 
@@ -78,15 +78,15 @@ def setUpLP(stn, decouple):
             # with the bounds on the LP variables
             if i != 0 and not decouple:
                 addConstraint(bounds[(j, '+')] - bounds[(i, '-')]
-                              <= stn.getEdgeWeight(i, j), prob)
+                              <= min(100000,stn.getEdgeWeight(i, j)), prob)
                 addConstraint(bounds[(i, '+')] - bounds[(j, '-')]
-                              <= stn.getEdgeWeight(j, i), prob)
+                              <= min(100000,stn.getEdgeWeight(j, i)), prob)
 
             elif i != 0 and (i, j) in stn.interagentEdges:
                 addConstraint(bounds[(j, '+')] - bounds[(i, '-')]
-                              <= stn.getEdgeWeight(i, j), prob)
+                              <= min(100000,stn.getEdgeWeight(i, j)), prob)
                 addConstraint(bounds[(i, '+')] - bounds[(j, '-')]
-                              <= stn.getEdgeWeight(j, i), prob)
+                              <= min(100000,stn.getEdgeWeight(j, i)), prob)
     return (bounds, deltas, prob)
 
 
@@ -125,7 +125,6 @@ def srea(inputstn,
     if not decouple:
         # TODO: Change to faster algorithm?
         inputstn.floyd_warshall()
-        print(inputstn)
 
     bounds, deltas, probBase = setUpLP(inputstn, decouple)
 
@@ -167,7 +166,6 @@ def srea(inputstn,
                             i, 0, ceil(-bounds[(i, '-')].varValue))
 
                 if returnAlpha:
-                    print(inputstn) #TODO- remove this
                     return alpha, inputstn
                 else:
                     return inputstn
@@ -226,9 +224,8 @@ def srea_LP(inputstn,
             p_ij = invcdf_uniform(1.0 - alpha * 0.5, edge.dist_lb,
                                   edge.dist_ub)
             p_ji = -invcdf_uniform(alpha * 0.5, edge.dist_lb, edge.dist_ub)
-            limit_ij = invcdf_uniform(0.0, edge.dist_lb, edge.dist_ub)
-            limit_ji = -invcdf_uniform(1.0, edge.dist_lb, edge.dist_ub)
-
+            limit_ij = invcdf_uniform(1.0, edge.dist_lb, edge.dist_ub)
+            limit_ji = -invcdf_uniform(0.0, edge.dist_lb, edge.dist_ub)
         deltas[(i, j)].upBound = limit_ij - p_ij
         deltas[(j, i)].upBound = limit_ji - p_ji
 
@@ -283,37 +280,56 @@ if __name__ == "__main__":
     tied = 0
     failed = 0
     count = 0
-    directory = "dataset/uncontrollable_full"
 
+
+    directory = "small_examples"
     data_list = glob.glob(os.path.join(directory, '*.json'))
-    # data_list = ['dataset/uncontrollable_full/uncontrollable6.json']
-    # data_list = ['dataset/dreamdata/STN_a4_i4_s5_t10000/original_0.json']
-    data_list = ['dataset/dreamdata/STN_a2_i4_s5_t5000/original_6.json']
-
 
 
     # testing dream data ##
 
-    directory = 'dataset/dreamdata/'
-    folders = os.listdir(directory)
-    data_list = []
-    result = []
-    for folder in folders:
-        data = glob.glob(os.path.join(directory, folder, '*.json'))
-        data_list += data
+    # directory = 'dataset/dreamdata/'
+    # folders = os.listdir(directory)
+    # data_list = []
+    # result = []
+    # for folder in folders:
+    #     data = glob.glob(os.path.join(directory, folder, '*.json'))
+    #     data_list += data
+    
     
     for data in data_list:
         print("simulating", data)
         stn = loadSTNfromJSONfile(data)
-        inputstn = stn.copy()
-        inputstn.floyd_warshall()
-        alpha, outputstn = srea(inputstn)
-        if outputstn != None:
-            a,b,c,d = DC_Checker(outputstn)   
-            if not a:
-                result += [data, alpha] 
-    print(result)
-    print(len(result))
+        stnc = stn.copy()
+        stnc.floyd_warshall()
+        a,b,c,d = DC_Checker(stnc)
+        print(a)
+        alpha, outputstn = srea(stnc)
+        e,f,g,t = DC_Checker(outputstn)
+
+        if not e:
+            print(data)
+            print(outputstn)
+            print(t)
+            break
+        
+
+
+
+
+
+        # if outputstn != None:
+        #     a,b,c,d = DC_Checker(outputstn)
+        #     if not a and len(outputstn.verts) < 20:
+        #         result += [data, alpha]
+        #         print(stn)
+        #         print(outputstn)
+        #         print(a,b)
+        #         print(c)
+        #         print(d)
+        #         break
+
+        
 
 
         # alpha, newstn = srea(stn, debugLP = True)
