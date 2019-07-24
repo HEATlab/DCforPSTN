@@ -26,18 +26,14 @@ def addConstraint(constraint,problem):
 
 
 ##
-# \fn setUp(STN, proportion=False, maxmin=False)
+# \fn setUpCentering(STN)
 # \brief Initializes the LP problem and the LP variables
 #
 # @param STN            An input STNU
-# @param proportion     Flag indicating whether we are setting up LP to
-#                       proportionally shrink contingent intervals
-# @param maxmin         Flag indicating whether we are setting up LP to
-#                       maximize the min shrinked contingent intervals
-#
+# 
 # @return   A tuple (bounds, deltas, prob) where bounds and deltas are
 #           dictionaries of LP variables, and prob is the LP problem instance
-def setUpCentering(STN, proportion=False, maxmin=False):
+def setUpCentering(STN, proportion=False):
     bounds = {}
     deltas = {}
     offsets = {}
@@ -92,18 +88,22 @@ def setUpCentering(STN, proportion=False, maxmin=False):
             deltas[(i,j)] = LpVariable('delta_%i'%j, lowBound= -offsets[(i,j)],
                                                             upBound=offsets[(i,j)])
 
+            cur_edge = STN.getEdge(i,j)
+            if cur_edge.dtype() == "gaussian":
+                center = cur_edge.mu
+            else:
+                center = (cur_edge.Cij - cur_edge.Cji)/2
 
             addConstraint(bounds[(j,'+')] - bounds[(i,'+')] ==
-                    STN.getEdgeWeight(i,j) + deltas[(i,j)], prob)
+                    center + deltas[(i,j)], prob)
             addConstraint(bounds[(j,'-')] - bounds[(i,'-')] ==
-                    -STN.getEdgeWeight(j,i) + deltas[(i,j)], prob)
+                    center + deltas[(i,j)], prob)
 
         else:
             # NOTE: We need to handle the infinite weight edges. Otherwise
             #       the LP would be infeasible
             upbound = MAX_FLOAT if STN.getEdgeWeight(i,j) == float('inf') \
                                             else STN.getEdgeWeight(i,j)
-
 
             #TODO - shouldnt it be negative?
             lowbound = MAX_FLOAT if STN.getEdgeWeight(j,i) == float('inf') \
