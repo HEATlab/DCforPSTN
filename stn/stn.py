@@ -143,13 +143,13 @@ class Edge(object):
         name_split = self.distribution.split("_")
         if len(name_split) != 3 or name_split[0] != "U":
             raise ValueError("No upper bound for non-uniform dist")
-        return float(name_split[2]) 
+        return float(name_split[2])*1000
     @property
     def dist_lb(self):
         name_split = self.distribution.split("_")
         if len(name_split) != 3 or name_split[0] != "U":
             raise ValueError("No lower bound for non-uniform dist")
-        return float(name_split[1]) 
+        return float(name_split[1])*1000
 
     def cap(self):
         """Caps this edge's Cij and Cji properties to a "max" floating point
@@ -527,7 +527,7 @@ class STN(object):
     ##
     # \brief Update the weight of edge with node objects i & j.
     #
-    # \details Mofidy the constraint regardless of what new edge weight is.
+    # \details Modify the constraint regardless of what new edge weight is.
     #
     # @param i  The starting Node of the edge.
     # @param j  The ending Node of the edge.

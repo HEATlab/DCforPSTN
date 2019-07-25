@@ -23,6 +23,66 @@ import csv
 # Generating Results
 # -------------------------------------------------------------------------
 
+def vary_risk(data_path, risk_levels, sim_num, out_name):
+    nested_folders = False
+    data_list = glob.glob(os.path.join(data_path, '*.json'))
+    if len(data_list) == 0:
+        folders = os.listdir(data_path)
+        data_list = []
+        for folder in folders:
+            data = glob.glob(os.path.join(data_path, folder, '*.json'))
+            data_list += data
+
+    result = {}
+
+    for data in data_list:
+        result[data] = [data]
+        for risk in risk_levels:
+            print("executing:", data)
+            dispatch_ml, times_ml = simulate_file(data, sim_num, False, True, True, risk)
+            dispatch_reg, times_reg = simulate_file(data, sim_num, False, True, False, risk)
+
+            durations_ml = [times_ml[2*i + 1] - times_ml[2*i] for i in range(int(len(times_ml)/2))]
+            durations_reg = [times_reg[2*i + 1] - times_reg[2*i] for i in range(int(len(times_reg)/2))]
+            relax_time = durations_ml[0]
+            dc_time = durations_ml[1]
+            time_ml = sum(durations_ml[2:])/len(durations_ml[2:])
+            time_reg = sum(durations_reg[2:])/len(durations_reg[2:])
+            result[data] += [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg]
+    
+    #return result
+
+    #Save the results
+    # with open(out_name, 'w') as f:
+    #     json.dump(result, f)
+    with open(out_name, 'w') as csv_file:
+        writer = csv.writer(csv_file)
+        for key, value in result.items():
+            writer.writerow(value)
+
+
+def check_list(data_list, sim_num, out_name):
+
+    if len(data_list) == 0:
+        folders = os.listdir(data_path)
+        data_list = []
+        for folder in folders:
+            data = glob.glob(os.path.join(data_path, folder, '*.json'))
+            data_list += data
+
+    result = {}
+
+    for data in data_list:
+        print("executing:", data)
+        dispatch_ml, times_ml = simulate_file(data, sim_num, False, False, True)
+
+        result[data] = [dispatch_ml]
+    
+    return result
+
+
+
+
 def compare_ml_reg(data_path, sim_num, out_name):
 
     nested_folders = False
@@ -38,10 +98,16 @@ def compare_ml_reg(data_path, sim_num, out_name):
 
     for data in data_list:
         print("executing:", data)
-        dispatch_ml = simulate_file(data, sim_num, False, False, True)
-        dispatch_reg = simulate_file(data, sim_num, False, False, False)
+        dispatch_ml, times_ml = simulate_file(data, sim_num, False, True, True)
+        dispatch_reg, times_reg = simulate_file(data, sim_num, False, True, False)
 
-        result[data] = [dispatch_ml, dispatch_reg]
+        durations_ml = [times_ml[2*i + 1] - times_ml[2*i] for i in range(int(len(times_ml)/2))]
+        durations_reg = [times_reg[2*i + 1] - times_reg[2*i] for i in range(int(len(times_reg)/2))]
+        relax_time = durations_ml[0]
+        dc_time = durations_ml[1]
+        time_ml = sum(durations_ml[2:])/len(durations_ml[2:])
+        time_reg = sum(durations_reg[2:])/len(durations_reg[2:])
+        result[data] = [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg]
     
     #return result
 
@@ -51,7 +117,7 @@ def compare_ml_reg(data_path, sim_num, out_name):
     with open(out_name, 'w') as csv_file:
         writer = csv.writer(csv_file)
         for key, value in result.items():
-            writer.writerow([key, value[0], value[1]])
+            writer.writerow([key, value[0], value[1], value[2], value[3], value[4], value[5]])
 
 
 def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):
@@ -66,11 +132,11 @@ def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):
         path, name = os.path.split(data)
         result[name] = [ddc, dispatch]
     
-    #return result
+    return result
 
     # Save the results
-    with open(out_name, 'w') as f:
-        json.dump(result, f)
+    # with open(out_name, 'w') as f:
+    #     json.dump(result, f)
 
 
 

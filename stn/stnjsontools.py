@@ -59,7 +59,7 @@ def loadSTNfromJSONobj(jsonSTN, using_PSTN=True):
     for e in jsonSTN['constraints']:
         if using_PSTN and 'distribution' in e:
             stn.addEdge(e['first_node'], e['second_node'],
-                        float(e['min_duration']), float(e['max_duration']),
+                        max(0, float(e['min_duration'])), float(e['max_duration']),
                         e['distribution']['type'], e['distribution']['name'])
         elif 'type' in e:
             if e['type'] == 'stcu':

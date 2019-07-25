@@ -5,6 +5,8 @@ from relax import relaxSearch
 import empirical
 import random
 import json
+import time
+from scipy.stats import norm
 
 # For faster checking in safely_scheduled
 import simulation as sim
@@ -39,9 +41,10 @@ def simulate_and_save(file_names: list, size: int, out_name: str):
 ##
 # \fn simulate_file(file_name, size)
 # \brief Record dispatch result for single file
-def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) -> float:
+def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, risk=0.05) -> float:
     network = loadSTNfromJSONfile(file_name)
-    result = simulation(network, size, verbose, gauss, relaxed)
+    numSig = norm.ppf(1-risk/2)
+    result = simulation(network, size, verbose, gauss, relaxed, numSig)
     if verbose:
         print(f"{file_name} worked {100*result}% of the time.")
     return result
@@ -49,26 +52,29 @@ def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) ->
 
 ##
 # \fn simulation(network, size)
-def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False) -> float:
+def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False, numSig=2) -> float:
     # Collect useful data from the original network
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
     uncontrollables = set(contingents.values())
 
+    times = []
+
     if relaxed:
-        dispatching_network, count, cycles, weights = relaxSearch(getMinLossBounds(network.copy(), 2))
+        times.append(time.time())
+        dispatching_network, count, cycles, weights = relaxSearch(getMinLossBounds(network.copy(), numSig))
+        times.append(time.time())
         if dispatching_network == None:
             dispatching_network = network
     else:
         dispatching_network = network
 
     total_victories = 0
+    times.append(time.time())
     dc_network = STNtoDCSTN(dispatching_network)
+    times.append(time.time())
     dc_network.addVertex(ZERO_ID)
 
-    controllability = dc_network.is_DC()
-    if verbose:
-        print("Finished checking DC...")
 
     # Detect if the network has an inconsistency in a fixed edge
     verts = dc_network.verts.keys()
@@ -87,8 +93,10 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     for j in range(size):
         realization = generate_realization(network, gauss)
         copy = dc_network.copy()
+        times.append(time.time())
         result = dispatch(dispatching_network, copy, realization, contingents,
                           uncontrollables, verbose)
+        times.append(time.time())
         if verbose:
             print("Completed a simulation.")
         if result:
@@ -98,18 +106,18 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     if verbose:
         print(f"Worked {100*goodie}% of the time.")
 
-    return goodie
+    return goodie, times
 
 ##
 # \fn getMinLossBounds(network, numSig)
 # \brief Create copy of network with bounds related to spread
 def getMinLossBounds(network: STN, numSig):
     for nodes, edge in network.edges.items():
-        if edge.type == 'pstc' and edge.dtype == 'gaussian':
+        if edge.type == 'Empirical' and edge.dtype() == 'gaussian':
             sigma = edge.sigma
             mu = edge.mu
-            edge.Cij = mu + numSig * sigma
-            edge.Cji = -(mu - numSig * sigma)
+            edge.Cij = min(mu + numSig * sigma, edge.Cij)
+            edge.Cji = min(-(mu - numSig * sigma), edge.Cji)
     return network
 
 
@@ -301,7 +309,6 @@ def generate_realization(network: STN, gauss=False) -> dict:
     realization = {}
     for nodes, edge in network.contingentEdges.items():
         assert edge.dtype != None
-
         if edge.dtype() == "gaussian":
             generated = random.gauss(edge.mu, edge.sigma)
             while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):

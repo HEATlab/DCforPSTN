@@ -200,7 +200,8 @@ def optimalRelax(bounds, weight):
         if test_sum >= S:
             m = i
             break
-
+    if m == None:
+        m = 0
     A = (S - sum(length[:m])) / (n - m)
     epsilons = {}
     for e in contingent[m:]:
