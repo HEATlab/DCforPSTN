@@ -1,8 +1,10 @@
-from util import *
-from pulp import *
+from util import PriorityQueue, sys
+import pulp
 import math
 
 from stn import STN, loadSTNfromJSONfile
+
+from dispatch import generate_realization
 
 ##
 # \brief A global variable that stores the max float that will be used to deal
@@ -40,7 +42,7 @@ def setUpCentering(STN, proportion=False):
     deltas = {}
     offsets = {}
 
-    prob = LpProblem('Expected Value LP', LpMinimize)
+    prob = pulp.LpProblem('Expected Value LP', pulp.LpMinimize)
 
     # ##
     # NOTE: Our LP requires each event to occur within a finite interval. If
@@ -64,12 +66,12 @@ def setUpCentering(STN, proportion=False):
     # Not part of LP yet
     # ##
     for i in STN.verts:
-        bounds[(i,'+')] = LpVariable('t_%i_hi'%i, lowBound=0,
+        bounds[(i,'+')] = pulp.LpVariable('t_%i_hi'%i, lowBound=0,
                                             upBound=STN.getEdgeWeight(0,i))
 
         lowbound = 0 if STN.getEdgeWeight(i,0) == float('inf') else\
                             -STN.getEdgeWeight(i,0)
-        bounds[(i,'-')] = LpVariable('t_%i_lo'%i, lowBound=lowbound,
+        bounds[(i,'-')] = pulp.LpVariable('t_%i_lo'%i, lowBound=lowbound,
                                             upBound=None)
 
         addConstraint( bounds[(i,'-')] <= bounds[(i,'+')], prob)
@@ -85,10 +87,10 @@ def setUpCentering(STN, proportion=False):
 
     for i,j in STN.edges:
         if (i,j) in STN.contingentEdges:
-            offsets[(i,j)] = LpVariable('eps_%i'%j, lowBound=0)
-            # deltas[(i,j)] = LpVariable('delta_%i'%j, lowBound= -offsets[(i,j)],
+            offsets[(i,j)] = pulp.LpVariable('eps_%i'%j, lowBound=0)
+            # deltas[(i,j)] = pulp.LpVariable('delta_%i'%j, lowBound= -offsets[(i,j)],
             #                                                 upBound=offsets[(i,j)])
-            deltas[(i,j)] = LpVariable('delta_%i'%j)
+            deltas[(i,j)] = pulp.LpVariable('delta_%i'%j)
             cur_edge = STN.getEdge(i,j)
             if cur_edge.dtype() == "gaussian":
                 center = cur_edge.mu
@@ -130,7 +132,7 @@ def centeringLP(STN, debug=False):
         return 'Invalid', None, None
 
     # Report status message
-    status = LpStatus[prob.status]
+    status = pulp.LpStatus[prob.status]
     if debug:
         print("Status: ", status)
 
@@ -147,8 +149,8 @@ def centeringLP(STN, debug=False):
 def setUpScheduling(STN, debug=False):
     timepoints = {}
 
-    prob = LpProblem('Robust Scheduling LP', LpMaximize)
-    radius = LpVariable('rad', lowBound=0, upBound=None)
+    prob = pulp.LpProblem('Robust Scheduling LP', pulp.LpMaximize)
+    radius = pulp.LpVariable('rad', lowBound=0, upBound=None)
 
     # ##
     # NOTE: Our LP requires each event to occur within a finite interval. If
@@ -165,7 +167,7 @@ def setUpScheduling(STN, debug=False):
     for i in STN.verts:
         if STN.getEdgeWeight(0,i) == float('inf'):
             STN.setMakespan(MAX_FLOAT)
-        timepoints[i] = LpVariable('t_%i'%i, lowBound=0, upBound=STN.getEdgeWeight(0,i))
+        timepoints[i] = pulp.LpVariable('t_%i'%i, lowBound=0, upBound=STN.getEdgeWeight(0,i))
 
 
 
@@ -177,7 +179,6 @@ def setUpScheduling(STN, debug=False):
                                             else STN.getEdgeWeight(i,j)
             lowbound = MAX_FLOAT if STN.getEdgeWeight(j,i) == float('inf') \
                                             else STN.getEdgeWeight(j,i)
-            print(i,j, upbound, lowbound)
             if i==0 or j==0:
                 addConstraint(timepoints[j] - timepoints[i] <= upbound - radius, prob)
                 addConstraint(timepoints[i] - timepoints[j] <= lowbound - radius, prob)
@@ -203,7 +204,7 @@ def scheduleLP(STN, debug=False):
         return 'Invalid', None, None
 
     # Report status message
-    status = LpStatus[prob.status]
+    status = pulp.LpStatus[prob.status]
     if debug:
         print("Status: ", status)
 
@@ -216,22 +217,87 @@ def scheduleLP(STN, debug=False):
 
     return status, timepoints, radius
 
-if __name__ == "__main__":
-    stn = loadSTNfromJSONfile('dataset/exampleSTN.json')
-    print(stn)
+
+def simulateCenter(stn, size = 1):
     stncopy = stn.copy()
-    centerResult = centeringLP(stncopy, True)
-    for (i,j) in list(centerResult[2].keys()):
+    failure = 0
+    for _ in range(size):
+        realization  = generate_realization(stn)
+        P = PriorityQueue()
+        executed = []
+        schedule = {}
+        P.push(0,0)
+        while not P.isEmpty():
+            centerResult = centeringLP(stncopy, False)
+            if centerResult[0] == "Optimal":
+                stncopy = centerUpdate(stncopy, centerResult[2])
+            else:
+                failure += 1
+                break
+            scheduleResult = scheduleLP(stncopy, debug=False)
+            if scheduleResult[0] == "Optimal":
+                timepoints = scheduleResult[1]
+                for i in range(len(timepoints)):
+                    vert = int(timepoints[i].name[2:])
+                    if vert != 0 and vert not in executed:
+                        P.addOrDecKey(vert, timepoints[i].varValue)
+            else:
+                failure += 1
+                break
+                
+            weight, currVert = P.pop()
+            if currVert in stncopy.uncontrollables:
+                parentVert = stncopy.parent[currVert]
+                duration = realization[(parentVert, currVert)]
+                stncopy.modifyEdge(parentVert,currVert,duration)
+                stncopy.addEdge(parentVert,currVert,duration,duration)
+                executed += [currVert]
+                schedule[currVert] = weight
+
+            else:
+                stncopy.updateEdge(0, currVert, weight)
+                stncopy.updateEdge(currVert, 0, -weight)
+                executed += [currVert]
+                schedule[currVert] = weight
+                while currVert not in stncopy.uncontrollables and not P.isEmpty():
+                    weight, currVert = P.pop()
+                    stncopy.updateEdge(0, currVert, weight)
+                    stncopy.updateEdge(currVert, 0, -weight)
+                if currVert in stncopy.uncontrollables:
+                    parentVert = stncopy.parent[currVert]
+                    duration = realization[(parentVert, currVert)]
+                    stncopy.modifyEdge(parentVert,currVert,duration)
+                    stncopy.addEdge(parentVert,currVert,duration,duration)
+                    executed += [currVert]
+                    schedule[currVert] = weight
+                else:
+                    break
+                            
+
+            
+            
+                
+
+
+            break
+        
+
+def centerUpdate(stn, offsets):
+    stncopy = stn.copy()
+    for (i,j) in list(offsets.keys()):
         currEdge = stncopy.getEdge(i,j)
-        if currEdge.dtype == "Gaussian":
-            weight = currEdge.mu + centerResult[2][(i,j)].varValue
+        if currEdge.dtype() == "gaussian":
+            weight = currEdge.mu + offsets[(i,j)].varValue
             stncopy.updateEdge(i,j,weight)
             stncopy.updateEdge(j,i,-weight)
         else:
-            weight = (currEdge.dist_lb + currEdge.dist_ub) / 2 + centerResult[2][(i,j)].varValue
+            weight = (currEdge.dist_lb + currEdge.dist_ub) / 2 + offsets[(i,j)].varValue
             stncopy.updateEdge(i,j,weight)
             stncopy.updateEdge(j,i,-weight)
-    stncopy.modifyEdge(1,2,7)
-    stncopy.modifyEdge(2,1,-7)
-    print(stncopy)
-    status, timepoints, radius = scheduleLP(stncopy, debug=True)
+    return stncopy
+
+
+if __name__ == "__main__":
+    stn = loadSTNfromJSONfile('dataset/dreamdata/STN_a2_i4_s1_t4000/original_9.json')
+    stncopy = stn.copy()
+    simulateCenter(stn)
