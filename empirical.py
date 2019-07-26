@@ -83,7 +83,7 @@ def check_list(data_list, sim_num, out_name):
 
 
 
-def compare_ml_reg(data_path, sim_num, out_name, gauss):
+def compare_ml_reg(data_path, sim_num, out_name, gauss, risk):
 
     nested_folders = False
     data_list = glob.glob(os.path.join(data_path, '*.json'))
@@ -98,8 +98,8 @@ def compare_ml_reg(data_path, sim_num, out_name, gauss):
 
     for data in data_list:
         print("executing:", data)
-        dispatch_ml, times_ml = simulate_file(data, sim_num, False, gauss, True)
-        dispatch_reg, times_reg = simulate_file(data, sim_num, False, gauss, False)
+        dispatch_ml, times_ml = simulate_file(data, sim_num, False, gauss, True, risk)
+        dispatch_reg, times_reg = simulate_file(data, sim_num, False, gauss, False, risk)
 
         durations_ml = [times_ml[2*i + 1] - times_ml[2*i] for i in range(int(len(times_ml)/2))]
         durations_reg = [times_reg[2*i + 1] - times_reg[2*i] for i in range(int(len(times_reg)/2))]
