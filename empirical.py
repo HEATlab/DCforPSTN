@@ -83,7 +83,7 @@ def check_list(data_list, sim_num, out_name):
 
 
 
-def compare_ml_reg(data_path, sim_num, out_name):
+def compare_ml_reg(data_path, sim_num, out_name, gauss):
 
     nested_folders = False
     data_list = glob.glob(os.path.join(data_path, '*.json'))
@@ -98,16 +98,19 @@ def compare_ml_reg(data_path, sim_num, out_name):
 
     for data in data_list:
         print("executing:", data)
-        dispatch_ml, times_ml = simulate_file(data, sim_num, False, True, True)
-        dispatch_reg, times_reg = simulate_file(data, sim_num, False, True, False)
+        dispatch_ml, times_ml = simulate_file(data, sim_num, False, gauss, True)
+        dispatch_reg, times_reg = simulate_file(data, sim_num, False, gauss, False)
 
         durations_ml = [times_ml[2*i + 1] - times_ml[2*i] for i in range(int(len(times_ml)/2))]
         durations_reg = [times_reg[2*i + 1] - times_reg[2*i] for i in range(int(len(times_reg)/2))]
         relax_time = durations_ml[0]
         dc_time = durations_ml[1]
+
+        reg_dc = durations_reg[0]
+
         time_ml = sum(durations_ml[2:])/len(durations_ml[2:])
         time_reg = sum(durations_reg[2:])/len(durations_reg[2:])
-        result[data] = [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg]
+        result[data] = [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, 0, reg_dc, time_reg]
     
     #return result
 
@@ -117,7 +120,7 @@ def compare_ml_reg(data_path, sim_num, out_name):
     with open(out_name, 'w') as csv_file:
         writer = csv.writer(csv_file)
         for key, value in result.items():
-            writer.writerow([key, value[0], value[1], value[2], value[3], value[4], value[5]])
+            writer.writerow([key, value[0], value[1], value[2], value[3], value[4], value[5], value[6], value[7]])
 
 
 def generate_DDC_result(data_path, sim_num, out_name, gauss, relaxed):

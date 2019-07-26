@@ -72,8 +72,10 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     total_victories = 0
     times.append(time.time())
     dc_network = STNtoDCSTN(dispatching_network)
-    times.append(time.time())
     dc_network.addVertex(ZERO_ID)
+    controllability = dc_network.is_DC()
+    times.append(time.time())
+    
 
 
     # Detect if the network has an inconsistency in a fixed edge
@@ -307,17 +309,24 @@ def dispatch(network: STN,
 # \brief Uniformly at random pick values for contingent edges in STNU
 def generate_realization(network: STN, gauss=False) -> dict:
     realization = {}
-    for nodes, edge in network.contingentEdges.items():
-        assert edge.dtype != None
-        if edge.dtype() == "gaussian":
-            generated = random.gauss(edge.mu, edge.sigma)
-            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+    if not gauss:
+        for nodes, edge in network.contingentEdges.items():
+            assert edge.dtype != None
+            if edge.dtype() == "gaussian":
                 generated = random.gauss(edge.mu, edge.sigma)
-            realization[nodes[1]] = generated
-        elif edge.dtype() == "uniform":
-            generated = random.uniform(edge.dist_lb, edge.dist_ub)
-            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                    generated = random.gauss(edge.mu, edge.sigma)
+                realization[nodes[1]] = generated
+            elif edge.dtype() == "uniform":
                 generated = random.uniform(edge.dist_lb, edge.dist_ub)
-
+                while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                    generated = random.uniform(edge.dist_lb, edge.dist_ub)
+                realization[nodes[1]] = generated
+    else:
+        for nodes, edge in network.contingentEdges.items():
+            mu = (edge.Cij - edge.Cji)/2
+            sigma = (edge.Cij - mu)/2
+            generated = random.gauss(mu, sigma)
             realization[nodes[1]] = generated
+        
     return realization
