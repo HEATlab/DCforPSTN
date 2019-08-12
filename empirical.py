@@ -95,7 +95,6 @@ def compare_ml_reg(data_path, sim_num, out_name, gauss, risk):
             data_list += data
 
     result = {}
-
     for data in data_list:
         print("executing:", data)
         dispatch_ml, times_ml = simulate_file(data, sim_num, False, gauss, True, risk)
@@ -109,7 +108,7 @@ def compare_ml_reg(data_path, sim_num, out_name, gauss, risk):
         reg_dc = durations_reg[0]
 
         time_ml = sum(durations_ml[2:])/len(durations_ml[2:])
-        time_reg = sum(durations_reg[2:])/len(durations_reg[2:])
+        time_reg = sum(durations_reg[1:])/len(durations_reg[1:])
         result[data] = [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, 0, reg_dc, time_reg]
     
     #return result
