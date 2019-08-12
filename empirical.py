@@ -116,7 +116,7 @@ def compare_ml_reg(data_path, sim_num, out_name, gauss, risk):
     #Save the results
     # with open(out_name, 'w') as f:
     #     json.dump(result, f)
-    with open(out_name, 'w') as csv_file:
+    with open(out_name, 'w', newline='') as csv_file:
         writer = csv.writer(csv_file)
         for key, value in result.items():
             writer.writerow([key, value[0], value[1], value[2], value[3], value[4], value[5], value[6], value[7]])
