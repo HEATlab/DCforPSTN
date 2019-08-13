@@ -57,7 +57,6 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
     uncontrollables = set(contingents.values())
-
     times = []
 
     if relaxed:
@@ -68,7 +67,6 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
             dispatching_network = network
     else:
         dispatching_network = network
-
     total_victories = 0
     times.append(time.time())
     dc_network = STNtoDCSTN(dispatching_network)
@@ -315,11 +313,13 @@ def generate_realization(network: STN, gauss=False) -> dict:
             if edge.dtype() == "gaussian":
                 generated = random.gauss(edge.mu, edge.sigma)
                 while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                    print("yike")
                     generated = random.gauss(edge.mu, edge.sigma)
                 realization[nodes[1]] = generated
             elif edge.dtype() == "uniform":
                 generated = random.uniform(edge.dist_lb, edge.dist_ub)
                 while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                    print("oop")
                     generated = random.uniform(edge.dist_lb, edge.dist_ub)
                 realization[nodes[1]] = generated
     else:
