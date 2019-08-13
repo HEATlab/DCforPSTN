@@ -48,16 +48,19 @@ def vary_risk(data_path, risk_levels, sim_num, out_name):
             time_ml = sum(durations_ml[2:])/len(durations_ml[2:])
             time_reg = sum(durations_reg[2:])/len(durations_reg[2:])
             result[data] += [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg]
-    
+            with open(out_name, 'w') as csv_file:
+                writer = csv.writer(csv_file)
+                writer.writerow(data, dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg)
+
     #return result
 
     #Save the results
     # with open(out_name, 'w') as f:
     #     json.dump(result, f)
-    with open(out_name, 'w') as csv_file:
-        writer = csv.writer(csv_file)
-        for key, value in result.items():
-            writer.writerow(value)
+    # with open(out_name, 'w') as csv_file:
+    #     writer = csv.writer(csv_file)
+    #     for key, value in result.items():
+    #         writer.writerow(value)
 
 
 def check_list(data_list, sim_num, out_name):
@@ -247,4 +250,4 @@ def scheduleIsValid(network: STN, schedule: dict) -> STN:
 
 if __name__ == '__main__':
     #plot()
-    print("ran")
+    compare_ml_reg("dataset/rover_data", 200, "result/rover_ml_timing_knuth.csv", False, 0.25)
