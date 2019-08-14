@@ -5,7 +5,7 @@
       "local_id":0,
       "node_id":1,
       "location":null,
-      "max_domain":47474,
+      "max_domain":80000,
       "owner_id":0
     },
     {
@@ -13,7 +13,7 @@
       "local_id":1,
       "node_id":2,
       "location":null,
-      "max_domain":47474,
+      "max_domain":80000,
       "owner_id":0
     },
     {
@@ -21,7 +21,7 @@
       "local_id":2,
       "node_id":3,
       "location":null,
-      "max_domain":47474,
+      "max_domain":80000,
       "owner_id":0
     },
     {
@@ -29,7 +29,7 @@
       "local_id":3,
       "node_id":4,
       "location":null,
-      "max_domain":47474,
+      "max_domain":80000,
       "owner_id":0
     },
     {
@@ -37,48 +37,48 @@
       "local_id":4,
       "node_id":5,
       "location":null,
-      "max_domain":47474,
+      "max_domain":80000,
       "owner_id":0
     }
   ],
   "num_agents":1,
   "constraints":[
     {
-      "second_node":1,
+      "second_node":2,
       "max_duration":30000,
       "distribution":{
         "type":"Empirical",
         "name":"N_20_2."
       },
-      "first_node":2,
+      "first_node":1,
       "min_duration":10000
     },
     {
-      "second_node":2,
+      "second_node":3,
       "max_duration": 10000,
-      "first_node":1,
+      "first_node":2,
       "min_duration":0
     },
     {
-      "second_node":3,
+      "second_node":4,
       "max_duration":42500,
       "distribution":{
         "type":"Empirical",
         "name":"N_27.5_3."
       },
-      "first_node":2,
+      "first_node":3,
       "min_duration":12500
     },
     {
-      "second_node":4,
+      "second_node":5,
       "max_duration":10000,
-      "first_node":3,
+      "first_node":4,
       "min_duration":0
     },
     {
       "second_node":5,
       "max_duration":50000,
-      "first_node":4,
+      "first_node":1,
       "min_duration":40000
     }
   ]
