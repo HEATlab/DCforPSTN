@@ -250,4 +250,5 @@ def scheduleIsValid(network: STN, schedule: dict) -> STN:
 
 if __name__ == '__main__':
     #plot()
-    compare_ml_reg("dataset/rover_data", 200, "result/rover_ml_timing_knuth.csv", False, 0.25)
+    print("ran")
+    #compare_ml_reg("dataset/rover_data", 200, "result/rover_ml_timing_knuth.csv", False, 0.25)

@@ -71,7 +71,7 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     times.append(time.time())
     dc_network = STNtoDCSTN(dispatching_network)
     dc_network.addVertex(ZERO_ID)
-    #controllability = dc_network.is_DC()
+    controllability = dc_network.is_DC()
     times.append(time.time())
     
 
