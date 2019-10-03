@@ -1,7 +1,10 @@
 from util import *
 from pulp import *
 import math
-
+import glob
+import json
+import os
+from stn import STN, loadSTNfromJSONfile
 ##
 # \brief A global variable that stores the max float that will be used to deal
 #        with infinite edges.
@@ -94,6 +97,7 @@ def setUpCentering(STN, proportion=False):
             else:
                 center = (cur_edge.Cij - cur_edge.Cji)/2
 
+
             addConstraint(bounds[(j,'+')] - bounds[(i,'+')] ==
                     center + deltas[(i,j)], prob)
             addConstraint(bounds[(j,'-')] - bounds[(i,'-')] ==
@@ -105,12 +109,13 @@ def setUpCentering(STN, proportion=False):
             upbound = MAX_FLOAT if STN.getEdgeWeight(i,j) == float('inf') \
                                             else STN.getEdgeWeight(i,j)
 
+
             #TODO - shouldnt it be negative?
-            lowbound = MAX_FLOAT if STN.getEdgeWeight(j,i) == float('inf') \
-                                            else STN.getEdgeWeight(j,i)
+            lowbound = -MAX_FLOAT if STN.getEdgeWeight(j,i) == -float('inf') \
+                                            else -STN.getEdgeWeight(j,i)               
 
             addConstraint(bounds[(j,'+')]-bounds[(i,'-')] <= upbound, prob)
-            addConstraint(bounds[(i,'+')]-bounds[(j,'-')] <= lowbound, prob)
+            addConstraint(bounds[(j,'-')]-bounds[(i,'+')] <= lowbound, prob)
 
     return (bounds, offsets, prob)
 
@@ -118,6 +123,7 @@ def centeringLP(STN, debug=False):
     bounds, offsets, prob = setUpCentering(STN)
     
     Obj = sum([offsets[(i,j)] for i,j in offsets])
+
 
     prob += Obj, "Minimize the sum of distances from the expected value for the STN"
 
@@ -222,3 +228,12 @@ def scheduleLP(STN, debug=False):
         return status, None, None
 
     return status, timepoints, radius
+
+
+if __name__ == "__main__":
+    data = 'dataset/example.json'
+    stn = loadSTNfromJSONfile(data)
+    print(stn)
+    hello = scheduleLP(stn)
+    centered = centeringLP(stn, True)
+

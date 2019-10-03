@@ -55,7 +55,7 @@
     },
     {
       "second_node":3,
-      "max_duration": 10000,
+      "max_duration": 5000,
       "first_node":2,
       "min_duration":0
     },
@@ -71,15 +71,15 @@
     },
     {
       "second_node":5,
-      "max_duration":10000,
+      "max_duration":5000,
       "first_node":4,
       "min_duration":0
     },
     {
       "second_node":5,
-      "max_duration":50000,
+      "max_duration":55000,
       "first_node":1,
-      "min_duration":40000
+      "min_duration":50000
     }
   ]
 }
