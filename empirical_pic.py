@@ -160,11 +160,11 @@ def generate_result_relax(data_path, out_name):
         json.dump(result, f)
 
 
-def compute_corr(values:dict):
-    pairs = list(values.items())
-    x_vals = [x[1][0] for x in pairs]
-    y_vals = [x[1][1] for x in pairs]
-    return np.corrcoef(x_vals,y_vals)
+# def compute_corr(values:dict):
+#     pairs = list(values.items())
+#     x_vals = [x[1][0] for x in pairs]
+#     y_vals = [x[1][1] for x in pairs]
+#     return np.corrcoef(x_vals,y_vals)
 
 def identify_outliers(values:dict, threshold):
     pairs = list(values.items())
@@ -418,13 +418,13 @@ def sample(STN, success='default', LP='original', gauss=False):
 # @param LP       The type of LP we want to use
 #
 # @return a list of (degree, success) tuple for STNUs in the list
-def sampleAll(listOfFile, success='default', LP='original'):
+def sampleAll(listOfFile, success='default', LP='original', gauss = True):
     result = {}
     for fname in listOfFile:
         p, f = os.path.split(fname)
         print("Processing file: ", f)
         STN = loadSTNfromJSONfile(fname)
-        degree, success = sample(STN, success=success, LP=LP)
+        degree, success = sample(STN, 'default', 'original', gauss)
         result[f] = (degree, success)
 
 
@@ -850,4 +850,8 @@ def generateParallelChain(agent, task):
 
 if __name__ == '__main__':
     #plot()
-    print("ran")
+    print('ran')
+    directory = "dataset/dynamically_controllable"
+    data_list = glob.glob(os.path.join(directory, '*.json'))
+    result = sampleAll(data_list)
+    print(result)

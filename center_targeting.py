@@ -43,6 +43,8 @@ def setUpCentering(STN, proportion=False):
 
     prob = LpProblem('Expected Value LP', LpMinimize)
 
+    STN = STN.minimal()
+
     # ##
     # NOTE: Our LP requires each event to occur within a finite interval. If
     #       the input LP does not have finite interval specified for all
@@ -94,6 +96,7 @@ def setUpCentering(STN, proportion=False):
             cur_edge = STN.getEdge(i,j)
             if cur_edge.dtype() == "gaussian":
                 center = cur_edge.mu
+                print('center', center)
             else:
                 center = (cur_edge.Cij - cur_edge.Cji)/2
 
@@ -113,9 +116,9 @@ def setUpCentering(STN, proportion=False):
             #TODO - shouldnt it be negative?
             lowbound = -MAX_FLOAT if STN.getEdgeWeight(j,i) == -float('inf') \
                                             else -STN.getEdgeWeight(j,i)               
-
+            print('lowbound',lowbound)
             addConstraint(bounds[(j,'+')]-bounds[(i,'-')] <= upbound, prob)
-            addConstraint(bounds[(j,'-')]-bounds[(i,'+')] <= lowbound, prob)
+            addConstraint(bounds[(i,'+')]-bounds[(j,'-')] <= lowbound, prob)
 
     return (bounds, offsets, prob)
 
@@ -231,7 +234,7 @@ def scheduleLP(STN, debug=False):
 
 
 if __name__ == "__main__":
-    data = 'dataset/example.json'
+    data = 'dataset/mr_x.json'
     stn = loadSTNfromJSONfile(data)
     print(stn)
     hello = scheduleLP(stn)
