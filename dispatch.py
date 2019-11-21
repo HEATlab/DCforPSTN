@@ -5,6 +5,8 @@ from relax import relaxSearch
 import empirical
 import random
 import json
+import time as Time
+from scipy.stats import norm
 
 # For faster checking in safely_scheduled
 import simulation as sim
@@ -39,9 +41,10 @@ def simulate_and_save(file_names: list, size: int, out_name: str):
 ##
 # \fn simulate_file(file_name, size)
 # \brief Record dispatch result for single file
-def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) -> float:
+def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, risk=0.05) -> float:
     network = loadSTNfromJSONfile(file_name)
-    result = simulation(network, size, verbose, gauss, relaxed)
+    numSig = norm.ppf(1-risk/2)
+    result = simulation(network, size, verbose, gauss, relaxed, numSig)
     if verbose:
         print(f"{file_name} worked {100*result}% of the time.")
     return result
@@ -49,24 +52,30 @@ def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False) ->
 
 ##
 # \fn simulation(network, size)
-def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False) -> float:
+def simulation(network: STN, size: int, verbose=False, gauss=True, relaxed=False, numSig=2) -> float:
     # Collect useful data from the original network
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
     uncontrollables = set(contingents.values())
 
+    times = []
+
     if relaxed:
-        dispatching_network, count, cycles, weights = relaxSearch(network.copy())
+        times.append(Time.time())
+        dispatching_network, count, cycles, weights = relaxSearch(getMinLossBounds(network.copy(), numSig))
+        times.append(Time.time())
+        if dispatching_network == None:
+            dispatching_network = network
     else:
-        dispatching_network = network
+        dispatching_network= getMinLossBounds(network.copy(), numSig)
 
     total_victories = 0
+    times.append(Time.time())
     dc_network = STNtoDCSTN(dispatching_network)
     dc_network.addVertex(ZERO_ID)
-
     controllability = dc_network.is_DC()
-    if verbose:
-        print("Finished checking DC...")
+    times.append(Time.time())
+
 
     # Detect if the network has an inconsistency in a fixed edge
     verts = dc_network.verts.keys()
@@ -85,8 +94,10 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     for j in range(size):
         realization = generate_realization(network, gauss)
         copy = dc_network.copy()
+        times.append(Time.time())
         result = dispatch(dispatching_network, copy, realization, contingents,
                           uncontrollables, verbose)
+        times.append(Time.time())
         if verbose:
             print("Completed a simulation.")
         if result:
@@ -96,7 +107,28 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
     if verbose:
         print(f"Worked {100*goodie}% of the time.")
 
-    return goodie
+    return goodie, times
+
+##
+# \fn getMinLossBounds(network, numSig)
+# \brief Create copy of network with bounds related to spread
+def getMinLossBounds(network: STN, numSig):
+    for nodes, edge in network.edges.items():
+        if edge.type == 'Empirical' and edge.dtype() == 'gaussian':
+            sigma = edge.sigma
+            mu = edge.mu
+            edge.Cij = min(mu + numSig * sigma, edge.Cij)
+            edge.Cji = min(-(mu - numSig * sigma), edge.Cji)
+        elif edge.isContingent():
+            print("here")
+            sigma = (edge.Cij + edge.Cji)/4
+            mu = (edge.Cij - edge.Cji)/2
+            print(mu, " is mu and ", sigma, " is sigma")
+            edge.Cij = min(mu + numSig * sigma, edge.Cij)
+            edge.Cji = min(-(mu - numSig * sigma), edge.Cji)
+    return network
+
+
 
 
 ##
@@ -180,18 +212,6 @@ def dispatch(network: STN,
         if verbose:
             print('event', current_event,'is scheduled at', current_time)
 
-        # Quicker check for scheduling errors
-        if not sim.safely_scheduled(network, schedule, current_event):
-            if verbose:
-                print("------------------------------------------------------")
-                print("Failed -- event", current_event,
-                      "violated a constraint.")
-                print(
-                    f"At this time, we still had {len(not_executed)} "
-                    f"out of {len(dc_network.verts)} events left to schedule")
-                verbose = False
-                print("------------------------------------------------------")
-            return False
 
         # If the executed event was a contingent source
         if current_event in contingent_map:
@@ -293,20 +313,26 @@ def dispatch(network: STN,
 ##
 # \fn generate_realization(network)
 # \brief Uniformly at random pick values for contingent edges in STNU
-def generate_realization(network: STN, gauss = True) -> dict:
+def generate_realization(network: STN, gauss=True) -> dict:
     realization = {}
-    for nodes, edge in network.contingentEdges.items():
-        assert edge.dtype != None
-
-        if edge.dtype() == "gaussian":
-            generated = random.gauss(edge.mu, edge.sigma)
-            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+    if not gauss:
+        for nodes, edge in network.contingentEdges.items():
+            assert edge.dtype != None
+            if edge.dtype() == "gaussian":
                 generated = random.gauss(edge.mu, edge.sigma)
-            realization[nodes[1]] = generated
-        elif edge.dtype() == "uniform":
-            generated = random.uniform(edge.dist_lb, edge.dist_ub)
-            while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                    generated = random.gauss(edge.mu, edge.sigma)
+                realization[nodes[1]] = generated
+            elif edge.dtype() == "uniform":
                 generated = random.uniform(edge.dist_lb, edge.dist_ub)
-
+                while generated < min(-edge.Cji, edge.Cij) or generated > max(-edge.Cji, edge.Cij):
+                    generated = random.uniform(edge.dist_lb, edge.dist_ub)
+                realization[nodes[1]] = generated
+    else:
+        for nodes, edge in network.contingentEdges.items():
+            mu = (edge.Cij - edge.Cji)/2
+            sigma = (edge.Cij - mu)/2
+            generated = random.gauss(mu, sigma)
             realization[nodes[1]] = generated
+        
     return realization
