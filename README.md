@@ -1,11 +1,7 @@
-# Prob-in-Ctrl
-This repository hosts a collection of programs written by team *Probably in Control* (part of the Summer 2018 HEATlab group). This work resulted in a publication at the 29th International Conference of Automated Planning and Scheduling (ICAPS-19) titled *"Quantifying Degrees of Controllability for Temporal Networks with Uncertainty"*.  A pre-print is available [here](https://www.heatlab.org/papers/Akmal_et_al_ICAPS_2019.pdf).
+# DCforPSTN
+This repository hosts a collection of programs written by team *Ctrl Alt Repeat* (part of the Summer 2019 HEATlab group). This work resulted in a publication at the Thirty-Fourth AAAI conference on Artificial Intelligence  titled *"Dynamic Control of Probabilistic Simple Temporal Networks"*.  A pre-print is available [here](https://www.cs.hmc.edu/HEAT/papers/Gao_et_al_AAAI_2020.pdf).
 
-These files were migrated from the repository for Robotbrunch, a previous HEATlab team.
-The programs here serve to
-- generate STNUs, both randomly and from provided PSTN datasets,
-- compute metrics related to controllability on STNUs, and
-- simulate dispatch on STNUs.
+Note that the files included in this repository need to be executed within the code environment created by team *Prob-In-Ctrl* of HEATlab, which can be accessed [here](https://github.com/HEATlab/Prob-in-Ctrl). Additionally, the results for SREA and DREA can be obtained from the DREAM algorithm [source code](https://github.com/HEATlab/DREAM).
 
 ## Data
 The `dataset` folder hosts JSON representations of STNUs used in our research.
