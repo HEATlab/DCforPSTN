@@ -129,25 +129,18 @@ A NEOS Python client (made available by the [NEOS server](https://neos-server.or
 
 
 
-### Other Files
+<!-- ### Other Files
 
 #### result
-This folder contains several JSON files storing results we found related to degree of controllability, empirical success rates for dispatch, and solutions to nonlinear optimization problems.
+This folder contains several JSON files storing results we found related to degree of controllability, empirical success rates for dispatch, and solutions to nonlinear optimization problems. -->
 
 ## Credits
-The Summer 2018 HEATlab consisted of teams *Probably in Control*, *Acrobotics*, and *Robot Luncheon*.
-The former two are the spiritual successors to the 2017 HEATlab *Polybots* team, while the latter is the evolution and extension of 2017 HEATlab team *Robot Brunch*.
+The Summer 2019 HEATlab consisted of teams *Ctrl-Alt-Repeat* and *MAD-TN*, which our team being the spiritual extention of 2018 team *Prob-In-Ctrl*/
 All teams worked at Harvey Mudd College under the supervision of [Professor Jim Boerkoel](https://www.cs.hmc.edu/~boerkoel/) as part of the HMC CS department's "[summer of CS](https://www.cs.hmc.edu/research/)".
 
-- *Probably in Control* ~ Team {Maggie Li, Savana Ammons, Shyan Akmal}
-  - Explored the geometry of STNUs and degrees of controllability
-  - A pre-print of our work, published in ICAPS-19, can be accessed [here](https://www.heatlab.org/papers/Akmal_et_al_ICAPS_2019.pdf).
-- *Acrobotics* ~ Team VivaJoon OjhaLee
-  - Explored the durability of schedules in STNs and developed sumobot mascots
-  - A pre-print of their work, published in ICAPS-19, can be found [here](https://www.cs.hmc.edu/HEAT/papers/Lee_et_al_ICAPS_2019.pdf).
-- *Robot Luncheon* ~ Senior lab member Jordan R. Abrahams
-  - Designed and tested the DREAM algorithm for PSTN dispatch
-  - A pre-print of his and his collaborators' work, published in ICAPS-19, can be found [here](https://www.cs.hmc.edu/HEAT/papers/Abrahams_et_al_ICAPS_2019.pdf).
+- *Ctrl-Alt-Repeat* ~ Team {Lindsay Popowski, Michael Gao}
+  - Explored dynnamic controllability schedulers for PSTNs
+  - A pre-print of our work, published in ICAPS-19, can be accessed [here](https://www.cs.hmc.edu/HEAT/papers/Gao_et_al_AAAI_2020.pdf).
   
   ## License
   This project is licensed under the terms of the MIT license.
