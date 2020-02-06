@@ -2,8 +2,8 @@
 This repository hosts a collection of programs written by team *Ctrl Alt Repeat* (part of the Summer 2019 HEATlab group). This work resulted in a publication at the Thirty-Fourth AAAI conference on Artificial Intelligence  titled *"Dynamic Control of Probabilistic Simple Temporal Networks"*.  A pre-print is available [here](https://www.cs.hmc.edu/HEAT/papers/Gao_et_al_AAAI_2020.pdf).
 
 Note that the files included in this repository need to be executed within the code environment created by team *Prob-In-Ctrl* of HEATlab, which can be accessed [here](https://github.com/HEATlab/Prob-in-Ctrl). Additionally, the results for SREA and DREA can be obtained from the DREAM algorithm [source code](https://github.com/HEATlab/DREAM).
-
-## Data
+<!-- 
+## Data Processing
 The `dataset` folder hosts JSON representations of STNUs used in our research.
 These STNUs were constructed from the *ROVERS* and *CAR-SHARING* PSTNs, made by [(Santana et. al. 2016)](https://www.aaai.org/ocs/index.php/ICAPS/ICAPS16/paper/view/13138) and available [here](http://groups.csail.mit.edu/mers/datasets/scheduling/), by replacing distributions with finite intervals over all contingent edges.  
 
@@ -13,10 +13,10 @@ All 452 STNUs in the `dataset/dynamically_controllable` directory are dynamicall
 This dataset of networks is referenced in [the paper](https://www.cs.hmc.edu/HEAT/papers/Akmal_et_al_ICAPS_2019.pdf) our team submitted to [ICAPS 2019](https://icaps19.icaps-conference.org/).
 
 ## Documentation
-Files throughout the project are commented in doxygen style.
+Files throughout the project are commented in doxygen style. -->
 
 ## Project Structure
-The `stn` folder contains files describing an STN class (which is really a class for STNUs, and more generally could be easily extended to represetn PSTNs) and converting between the class and JSON representations of networks.
+The `stn` folder contains files describing an STN class (which is really a class for STNUs, and more generally could be easily extended to represetn PSTNs) and converting between the class and JSON representations of networks. 
 The remaining programs are not organized in any particular way. Because of this, in the comments that follow we often describe as a function taking in an "STN" when it really also works with STNUs as input.
 
 ### Primary Programs
@@ -33,7 +33,7 @@ Implements a dispatch strategy and associated simulation for STNUs, based off Al
 This strategy should always succeed for dynamically controllable STNUs.
 It works by first leveraging a conversion to the `DC_STN` class to infer wait constraints, and then following early execution.
 
-#### LP.py
+<!-- #### LP.py
 Uses `PuLP` module to set up and solve several different LPs.
 These LPs are primarily attempts at linearizing the calculation for degree of strong controllability.
 The main structure of the constraints remains the same accross most of the programs, but there are many different types of objective functions used.
@@ -53,13 +53,13 @@ This method is referred to in our paper as the DSC-LP.
 #### probability.py
 Stores functions that, given conflicts from non-DC network, return the predicted probability of successful dispatch on those networks.
 ##### Details
-The approximation here is an application of CLT to sums of uniformly distributed random variables.
+The approximation here is an application of CLT to sums of uniformly distributed random variables. -->
 
-#### relax.py
+<!-- #### relax.py
 Using the routines from `algorithm.py` and `LP.py`, defines various different ways of selecting "maximal" subintervals.
 ##### Description
 The approaches for computing subintervals in the strong controllability case involve using solutions from some LPs.
-In the dynamic controllability case, the main approach implemented is the `optimalRelax` function, which is a very straightforward algorithm (with `O(k*log k)` complexity, if `k` is the number of edges in the conflict) that finds the true maximum subintervals (in the sense of maximizing resulting volume while ensuring the conflict is resolved).
+In the dynamic controllability case, the main approach implemented is the `optimalRelax` function, which is a very straightforward algorithm (with `O(k*log k)` complexity, if `k` is the number of edges in the conflict) that finds the true maximum subintervals (in the sense of maximizing resulting volume while ensuring the conflict is resolved). -->
 
 #### stn/stn.py
 Defines STN, Edge, and Vertex classes.
@@ -82,11 +82,11 @@ Provides functions to create STN objects from input JSON files.
 
 ### Secondary Programs
 
-#### dc_stn.py
+<!-- #### dc_stn.py
 An older file.
 Builds a `DC_STN` class that represents STNUs with an aim of manipulating the associated labeled distance graph.
 Implements the DC checking algorithm described in [(Morris 2003)](https://pdfs.semanticscholar.org/6fb1/b64231b23924bd9e2a1c49f3b282a99e2f15.pdf).
-Also has a function for checking if STNs are consistent or not.
+Also has a function for checking if STNs are consistent or not. -->
 
 #### empirical.py
 Computes and plots empirical results, mainly related to strong controllability.
@@ -94,7 +94,7 @@ Computes and plots empirical results, mainly related to strong controllability.
 Leverages functions from `LP.py`, `dispatch.py`, and `relax.py` to measure approximate and exact degrees of strong controllability, approximate degrees of dynamic controllability, and true success rates with different dispatch strategies.
 Comtains some methods for plotting these results as well.
 
-#### plot.py
+<!-- #### plot.py
 A file that makes use of the `plotly` module to make some nice graphs of the results outputted by `empirical.py`.  
 
 #### result_stats.py
@@ -125,7 +125,7 @@ The output is an AMPL file.
 The objective function is the logarithm of the product of the lengths of contingent subintervals.
 
 #### NeosClient.py
-A NEOS Python client (made available by the [NEOS server](https://neos-server.org/neos/downloads.html)) that has been mildly modified. This is used to submit optimization problems to NEOS, and then extract the values achieved by the objective function once the jobs are finished.
+A NEOS Python client (made available by the [NEOS server](https://neos-server.org/neos/downloads.html)) that has been mildly modified. This is used to submit optimization problems to NEOS, and then extract the values achieved by the objective function once the jobs are finished. -->
 
 
 
