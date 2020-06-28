@@ -139,7 +139,8 @@ def originalLP(STN, naiveObj=False, debug=False):
         eps = []
         for i,j in STN.contingentEdges:
             c = STN.edges[(i,j)].Cij + STN.edges[(i,j)].Cji
-            eps.append( (epsilons[(j,'+')]+epsilons[j,'-'])/c )
+            if c != 0:
+                eps.append( (epsilons[(j,'+')]+epsilons[j,'-'])/c )
         Obj = sum(eps)
 
     prob += Obj, "Maximize the Super-Interval/Max-Subinterval for the input STN"

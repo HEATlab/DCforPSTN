@@ -1,7 +1,7 @@
 from stn import STN, loadSTNfromJSONfile
 from util import STNtoDCSTN, PriorityQueue
 from dc_stn import DC_STN
-from relax import relaxSearch
+from relax import relaxSearch,LP_bounds 
 import empirical
 import random
 import json
@@ -41,10 +41,10 @@ def simulate_and_save(file_names: list, size: int, out_name: str):
 ##
 # \fn simulate_file(file_name, size)
 # \brief Record dispatch result for single file
-def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, risk=0.05) -> float:
+def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, risk=0.05, LP=False) -> float:
     network = loadSTNfromJSONfile(file_name)
     numSig = norm.ppf(1-risk/2)
-    result = simulation(network, size, verbose, gauss, relaxed, numSig)
+    result = simulation(network, size, verbose, gauss, relaxed, numSig, LP)
     if verbose:
         print(f"{file_name} worked {100*result}% of the time.")
     return result
@@ -52,7 +52,7 @@ def simulate_file(file_name, size, verbose=False, gauss=False, relaxed=False, ri
 
 ##
 # \fn simulation(network, size)
-def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False, numSig=2) -> float:
+def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=False, numSig=2, LP=False) -> float:
     # Collect useful data from the original network
     contingent_pairs = network.contingentEdges.keys()
     contingents = {src: sink for (src, sink) in contingent_pairs}
@@ -65,8 +65,15 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
         times.append(time.time())
         if dispatching_network == None:
             dispatching_network = network
+    elif LP:
+        times.append(time.time())
+        ## incorporating LP results
+        dispatching_network = LP_bounds(getMinLossBounds(network.copy(), numSig))
+        times.append(time.time())
+        if dispatching_network == None:
+            dispatching_network = network
     else:
-        dispatching_network = network
+        dispatching_network = network.copy()
     total_victories = 0
     times.append(time.time())
     dc_network = STNtoDCSTN(dispatching_network)
@@ -108,18 +115,27 @@ def simulation(network: STN, size: int, verbose=False, gauss=False, relaxed=Fals
 
     return goodie, times
 
-##
-# \fn getMinLossBounds(network, numSig)
-# \brief Create copy of network with bounds related to spread
+# ##
+# # \fn getMinLossBounds(network, numSig)
+# # \brief Create copy of network with bounds related to spread
+# def getMinLossBounds(network: STN, numSig):
+#     for nodes, edge in network.edges.items():
+#         if edge.type == 'Empirical' and edge.dtype() == 'gaussian':
+#             print("we working")
+#             sigma = edge.sigma
+#             mu = edge.mu
+#             edge.Cij = min(mu + numSig * sigma, edge.Cij)
+#             edge.Cji = min(-(mu - numSig * sigma), edge.Cji)
+#     return network
+
 def getMinLossBounds(network: STN, numSig):
     for nodes, edge in network.edges.items():
-        if edge.type == 'Empirical' and edge.dtype() == 'gaussian':
-            sigma = edge.sigma
-            mu = edge.mu
-            edge.Cij = min(mu + numSig * sigma, edge.Cij)
-            edge.Cji = min(-(mu - numSig * sigma), edge.Cji)
+        if edge.isContingent():
+            mu = (edge.Cij - edge.Cji)/2
+            sigma = (edge.Cij + edge.Cji)/4
+            edge.Cij = mu + numSig * sigma
+            edge.Cji = -(mu - numSig * sigma)
     return network
-
 
 
 

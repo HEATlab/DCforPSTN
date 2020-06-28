@@ -1,5 +1,6 @@
 from algorithm import *
 from pulp import *
+from LP import *
 
 ## \file relax.py
 #  \brief relaxation algorithm for dynamic controllability
@@ -257,3 +258,26 @@ def relaxSearch(STN):
         return STN, count, cycles, weights
     else:
         return None, 0, None, None
+
+
+
+## For LSC LP stuff 
+
+##
+# \fn LP_bounds(STN)
+# \brief compute shrinked contingent intervals
+#
+# @param STN            an input STN
+#
+# @return the STN bounds after running the original LP on it to adjust the bounds
+def LP_bounds(STN):
+    _, bounds, epsilons = originalLP(STN.copy(), naiveObj=False)
+
+    if epsilons is not None:
+        for edge in list(STN.contingentEdges.values()):
+            low, high = epsilons[(edge.j, '-')].varValue, epsilons[(edge.j, '+')].varValue
+            
+            STN.modifyEdge(edge.j, edge.i, edge.Cji + low)
+            STN.modifyEdge(edge.i, edge.j, edge.Cij - high)
+
+    return STN

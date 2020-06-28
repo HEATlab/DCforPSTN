@@ -18,10 +18,12 @@ import csv
 # \brief perform empirical analysis on degree of controllability metrics.
 
 
+
 # -------------------------------------------------------------------------
 # Generating Results
 # -------------------------------------------------------------------------
 
+#edited this to do LSC_LP
 def vary_risk(data_path, risk_levels, sim_num, out_name):
     nested_folders = False
     data_list = glob.glob(os.path.join(data_path, '*.json'))
@@ -38,7 +40,8 @@ def vary_risk(data_path, risk_levels, sim_num, out_name):
         result[data] = [data]
         for risk in risk_levels:
             print("executing:", data)
-            dispatch_ml, times_ml = simulate_file(data, sim_num, False, True, True, risk)
+            # where the editing shows up
+            dispatch_ml, times_ml = simulate_file(data, sim_num, False, True, False, risk, True)
             dispatch_reg, times_reg = simulate_file(data, sim_num, False, True, False, risk)
 
             durations_ml = [times_ml[2*i + 1] - times_ml[2*i] for i in range(int(len(times_ml)/2))]
@@ -48,9 +51,11 @@ def vary_risk(data_path, risk_levels, sim_num, out_name):
             time_ml = sum(durations_ml[2:])/len(durations_ml[2:])
             time_reg = sum(durations_reg[2:])/len(durations_reg[2:])
             result[data] += [dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg]
-            with open(out_name, 'w') as csv_file:
-                writer = csv.writer(csv_file)
-                writer.writerow(data, dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg)
+    with open(out_name, 'w', newline='') as csv_file:
+        writer = csv.writer(csv_file)
+        #writer.writerow([data, dispatch_ml, dispatch_reg, relax_time, dc_time, time_ml, time_reg])
+        for key, value in result.items():
+            writer.writerow(value)
 
     #return result
 
@@ -244,11 +249,14 @@ def scheduleIsValid(network: STN, schedule: dict) -> STN:
 
 
 
+
 # -------------------------------------------------------------------------
 #  Main function
 # -------------------------------------------------------------------------
 
 if __name__ == '__main__':
     #plot()
-    print("ran")
+    risks = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+    vary_risk("dataset/uncontrollable_full/", [0.01,0.05,0.1,0.2,0.3,0.5], 200, "aij_results_test.csv")
+    #print("ran")
     #compare_ml_reg("dataset/rover_data", 200, "result/rover_ml_timing_knuth.csv", False, 0.25)
