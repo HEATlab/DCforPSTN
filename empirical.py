@@ -257,6 +257,6 @@ def scheduleIsValid(network: STN, schedule: dict) -> STN:
 if __name__ == '__main__':
     #plot()
     risks = [0.01, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
-    vary_risk("dataset/uncontrollable_full/", [0.01,0.05,0.1,0.2,0.3,0.5], 200, "aij_results_test.csv")
+    vary_risk("dataset/uncontrollable_full/", [0.01,0.05,0.1,0.2,0.3,0.5], 200, "aij_results.csv")
     #print("ran")
     #compare_ml_reg("dataset/rover_data", 200, "result/rover_ml_timing_knuth.csv", False, 0.25)
