@@ -8,6 +8,69 @@ import json
 # \brief Methods to plot scatter plots shown in empirical sections
 
 
+
+def plot_lsc_vs_ml(risks, lsc, ml):
+    trace_lsc = go.Scatter(
+        x=risks,
+        y=lsc,
+        name='<b>LSC-LP</b>  ',
+        mode='markers',
+        marker=dict(
+            size=13,
+            color='rgba(255, 182, 193, .9)',
+        ))
+
+    trace_ml = go.Scatter(
+        x=risks,
+        y=ml,
+        name='<b>Min-Loss DC</b>  ',
+        mode='markers',
+        marker=dict(
+            size=13,
+            color='rgba(152, 0, 0, .8)',
+        ))
+
+    layout = go.Layout(
+        title='<b>Dispatch Success Across Risk Levels</b>',
+        titlefont=dict(
+            size=24,
+            color='black',
+        ),
+        legend=dict(
+            x=0.1,
+            y=1,
+            # orientation="h",
+            font=dict(size=20, ),
+        ),
+        xaxis=dict(
+            title='Risk Level (α)',
+            titlefont=dict(
+                size=18,
+                color='black',
+            ),
+            zerolinewidth=2,
+            tickfont=dict(
+                size=15,
+                color='black',
+            )),
+        yaxis=dict(
+            title='Dispatch Success Rate',
+            titlefont=dict(
+                size=18,
+                color='black',
+            ),
+            zerolinewidth=2,
+            tickfont=dict(
+                size=15,
+                color='black',
+            )))
+
+    data = [trace_lsc, trace_ml]
+    fig = go.Figure(data=data, layout=layout)
+    # py.iplot(fig, filename='test')
+    py.image.save_as(fig, filename='risks_aij.png', scale=3)
+
+
 ##
 #  \fn plot_strong_1
 #  \brief plot the Actual/optimal DSC vs. LP-predicted DSC
@@ -133,7 +196,7 @@ def plot_strong_2():
             font=dict(size=20, ),
         ),
         xaxis=dict(
-            title='LP-Predicted Degree of Strong Controllability',
+            title='LP-Predicted Likelihood of Strong Controllability',
             titlefont=dict(
                 size=18,
                 color='black',
@@ -164,9 +227,9 @@ def plot_strong_2():
 #  \fn plot_dynamic
 #  \brief plot the empirical success rate vs. approximated DDC
 def plot_dynamic():
-    with open('result/result_dynamic.json', 'r') as f:
+    with open('result/dynamic_result.json', 'r') as f:
         result_dynamic = json.loads(f.read())
-    with open('result/result_relax.json', 'r') as f:
+    with open('result/relax_result.json', 'r') as f:
         result_relax = json.loads(f.read())
 
     once = []
@@ -210,7 +273,7 @@ def plot_dynamic():
             font=dict(size=15, ),
         ),
         xaxis=dict(
-            title='Predicted Degree of Dynamic Controllability',
+            title='Predicted Likelihood of Dynamic Controllability',
             titlefont=dict(
                 size=18,
                 color='black',
